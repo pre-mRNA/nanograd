@@ -14,7 +14,7 @@ recent version of:
 
 
 # usage 
-sh nanograd.sh [options] -a "/path/to/annotation (fasta and optionally gtf)" -b "/path/to/bam/directory" -o "/path/to/output/directory" 
+sh nanograd.sh [options] -a "/path/to/fasta/directory" -b "/path/to/bam/" -o "/path/to/output/directory" 
 
 # options 
 -t (threadcount)          
