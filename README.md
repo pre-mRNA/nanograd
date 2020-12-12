@@ -17,10 +17,10 @@ recent version of:
 sh nanograd.sh [options] -a "/path/to/fasta/directory" -b "/path/to/bam/" -o "/path/to/output/directory" 
 
 # options 
--t (threadcount)          
--m (runmode, to be fully implemented)       
--v (verbose mode, to be fully implemented)          
--c (cluster confidece level, 25 by default, to be fully implemented)        
+-t (threadcount) # currently working          
+-m (runmode) # to be fully implemented
+-v (verbose mode) # partially implemented          
+-c (cluster confidece level, 25 by default) # partially implemented        
 
 # output 
 - a bed-like register of cluster position, cluster support level, high-confidence cluster length (to be clarufied), and decay constant      
