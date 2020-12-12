@@ -17,9 +17,9 @@ recent version of:
 sh nanograd.sh [options] -a "/path/to/fasta/directory" -b "/path/to/bam/" -o "/path/to/output/directory" 
 
 # options 
--t (threadcount) # currently working          
--m (runmode) # to be fully implemented
--v (verbose mode) # partially implemented          
+-t (threadcount) # currently working               
+-m (runmode) # to be fully implemented      
+-v (verbose mode) # partially implemented                 
 -c (cluster confidece level, 25 by default) # partially implemented        
 
 # output 
