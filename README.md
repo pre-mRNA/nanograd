@@ -1,6 +1,6 @@
 # nanograd
 
-- nanograd performs transcriptome-free identification of polyA sites from nanopore direct-RNA sequencing alignemnts 
+- nanograd performs transcriptome-free identification of polyA sites from nanopore direct-RNA sequencing alignments 
 - nanograd computes coverage decay (average loss in read coverage per base pair) upon each polyA cluster 
 
 # dependancies 
