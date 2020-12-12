@@ -3,10 +3,10 @@
 # written by A.J. Sethi on 2020-11-18
 # aim: this script computes the coverage gradient for annotated transcripts using nanopore direct RNA alignments
 
-# dependencies: recent versions of: samtools, bedtools, java, R, picard, GNU parallel
+# dependencies: recent versions of: samtools, bedtools, R, GNU parallel
 
 # testing;
-# module load clairo; module load R; module load java; bash ~/femtoSplice/nanograd/nanograd.sh -a "/scratch/lf10/as7425/sequinData" -b "/scratch/lf10/as7425/sequinData/" -o "/scratch/lf10/as7425/bamTest" -t "48" -p "/home/150/as7425/internal-ClaiRO/dependencies/picard-2.22.1"
+# rm -rf "/scratch/lf10/as7425/bamTest"; module load clairo; module load R; module load java; bash ~/nanograd/nanograd.sh -a "/scratch/lf10/as7425/sequinData" -b "/scratch/lf10/as7425/sequinData/" -o "/scratch/lf10/as7425/bamTest" -t "8"
 
 # submit with
 
@@ -14,9 +14,8 @@
 # -b /path/to/query/alignment.bam (musted be sorted and indexed with index located at /path/to/query/alignment.bam.bai)
 # -o /path/to/output/output/directory
 # -t /preferred/threadcount
-# -j /path/to/picard/ (link to the folder which contains picard)
-# -m /preferred/runmode (currently deprecated)
-# -v /preferred/verbosity (currently deprecated)
+# -m /preferred/runmode (partially implemented)
+# -v /preferred/verbosity (partially implemented)
 
 ####################################
 
@@ -55,13 +54,12 @@ done
 export threadCount="8"
 export VERBOSE="false"
 
-# initilalize mode
+# initilalize runmode
 export MODE="die"
 
 # check the path to nanograd
 [ -n "${SCRIPTPATH+set}" ] || SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )" || die "cannot get script path"; export SCRIPTPATH="${SCRIPTPATH}" # get the script path, adapted from https://stackoverflow.com/questions/4774054/reliable-way-for-a-bash-script-to-get-the-full-path-to-itself
-echo "scriptpath is ${SCRIPTPATH}"
-
+nsec "Nanograd is running from ${SCRIPTPATH} with parameters\n\t###\t$@"
 
 ####################################
 
@@ -116,12 +114,10 @@ do
       ssec "Proceeding in verbose mode"
       ;;
 
-      p) # path to picard folder
-      export picardPath="${OPTARG}"
-      ;;
+
 
       # runmode currently deprecated
-      m) # runmode; test if we want to run the entire index or just a specific region
+      #m) # runmode; test if we want to run the entire index or just a specific region
 
       # note:
       # each mode has a numerical start (nm) and end integer (nmf)
@@ -135,30 +131,12 @@ do
     #     export MODE="complete"
     #     export nm="1"
     #     export nmf="999"
-    #
-    #     # whippetIndex (WI) starts with generating the whippet index and ends there as well (start and end at 2)
-    #   elif [[ ${OPTARG} == "WI" ]]; then
-    #     export MODE="whippetIndex"
-    #     export nm="2"
-    #     export nmf="2"
-    #   else die "could not parse the user provided runmode, ${OPTARG}"
-    #   fi
-    #   ;;
-    #
-    #   w) # path to whippet
-    #   export whippetPath="${OPTARG}"
-    #   ;;
-    #
-    #   j) # path to jvarkit splitbam3
-    #   export splitbamPath="${OPTARG}"
-    #   ;;
-    #
+
     esac;
   done
   shift $((OPTIND-1))
   ARGS="${ARGS} $1 "
   shift
-
 done
 
 ####################################
@@ -174,22 +152,18 @@ vsec "your reference sequence is ${myFasta}"
 [ -d "${outputDirectory}" ] || die "did not detect a valid output directory"
 vsec "Your output directory is ${outputDirectory}"
 
-# validate picard path
-[ -z ${picardPath+x} ] && die "user did not supply picard path"
-[ -f ${picardPath}/picard.jar ] || die "cannot find picard at supplied path ${picardPath}"
-
 # report confidence level
 export cl="25"
 vsec "your cluster confidence level is 25 alignments"
 
 # define some variables (doing this here because functions are being modularised and these variables might be required if an antecedent function is skipped)
 export od=${outputDirectory}
-export mp=${od}/mpileup
+export mp="${od}/mpileup"
 export sb="${od}/splitBamThreadCount/"
 export ec="${od}/multiSamToEndCoordinate/"
 export ac="${od}/analyseClusters/"
 export cr="${od}/assignClusterToRead"
-
+export ao="${od}/assembleOutput"
 
 # validate threadCount
 ssec "proceeding with ${threadCount} threads"
@@ -197,7 +171,6 @@ ssec "proceeding with ${threadCount} threads"
 # also define the quarter threadcount for downstream processing
 export quarter_tc=$((${threadCount}/4)) # divid threadcout by 4
 export qtc=$(echo $quarter_tc | awk '{print int($1+0.5)}') # round down
-
 
 # validate the runmode
 #[ ${MODE} == "die" ] && die "user did not define runmode"
@@ -209,12 +182,12 @@ export qtc=$(echo $quarter_tc | awk '{print int($1+0.5)}') # round down
 # we use the "main" function to call oter functions as reqired
 main() {
 
-
   splitBamThreadCount || die "cannot split"
   multiSamToEndCoordinate || die "cannot fetch end coordinates"
   clusterStatistics || die "cannot analyse 3' end clusters"
   assignClusterToRead || die "cannot assign clusters to reads"
-  echo "completed succesfully"
+  assembleOutput || die "cannot assembly output"
+  nsec "nanograd completed succesfully - thanks for testing it :)"
   exit 0
 
 
@@ -365,7 +338,7 @@ function multiSamToEndCoordinate() {
   ssec "clustering polyA sites"
   bedtools cluster -s -d 15 -i ${ec}/strandBed/sortedTotalTranscriptionalEnds.bed > ${ec}/clusters.txt
   clusterCount=$(cat ${ec}/clusters.txt | cut -f7 | sort -u | wc -l)
-  echo "${clusterCount} clusters were observed"
+  ssec "${clusterCount} clusters were observed"
 
   # mark this function as complete
   touch ${ec}/.complete
@@ -402,7 +375,7 @@ function clusterStatistics() {
   # arguments are
     # 1: path to output (a file of high-confidence clusters)
   touch ${ac}/highConfidenceClusters.bed || die "test A"
-  Rscript ${SCRIPTPATH}/cluster.R --args "${ac}/highConfidenceClusters.bed" "${ec}/clusters.txt" >/dev/null
+  Rscript ${SCRIPTPATH}/scripts/cluster.R --args "${ac}/highConfidenceClusters.bed" "${ec}/clusters.txt" &>/dev/null
 
   # mark this function as complete
   touch ${ac}/.complete || die "test B"
@@ -432,17 +405,30 @@ function assignClusterToRead() {
   # first, read the bedtools cluster data and make a separate file containing the read names for transcipts within each cluster
   mkdir -p ${cr}/clusterTargets || die "cannot make cluster target directory"
   cd ${cr}/clusterTargets || die "cannot access cluster target directory"
-  awk -F "\t" '{print>$7}' ${ec}/clusters.txt || die "cannot split cluster file"
+  echo "awk" && time awk -F "\t" '{print$4>$7}' ${ec}/clusters.txt || die "cannot split cluster file"
 
   # delete clusters with supporting reads less than confidence level cl;
   cd ${cr}/clusterTargets || die "cannot get to cluster targets"
-  find ${cr}/clusterTargets/ -type f -exec awk -v x=${cl} 'NR==x{exit 1}' {} \; -exec rm -f {} \;
-  for i in *; do cat $i | cut -f4 > ${i}.tmp && mv ${i}.tmp ${i} || die "cannot cut $i"; done
+  # find ${cr}/clusterTargets/ -type f -exec awk -v x=${cl} 'NR==x{exit 1}' {} \; -exec rm -f {} \;
+  # ^ migrated to function fitlerCluster
 
+
+  # filter for clusters with reads >= cl
+  function filterCluster() {
+  local clusterCount=$(cat $1 | wc -l)
+  [ ${clusterCount} -lt "${cl}" ] && rm $1
+}; export -f filterCluster
+
+  ssec "filtering for clusters with at least ${cl} supporting reads"
+  cd ${cr}/clusterTargets/ && ls * | parallel -j ${threadCount} filterCluster {} || die "cannot filter for clusters with more than ${cl} read"
+
+  # remove empty clusters
+  cd ${cr}/clusterTargets && for i in *; do len=$(cat $i | wc -l); [ ${len} -eq "0" ] && rm ${i}; done
+
+  # make the clustered bam directory
   export clusteredBam=${cr}/clusteredBam
   mkdir -p ${clusteredBam} 2>/dev/null
   [ -d ${clusteredBam} ] || die "cannot find ${clusteredBam}"
-
 
   # define a subfunction to iterate over each cluster and recover the reads into a new bam file
   # each iteration of the function operates over one cluster
@@ -450,13 +436,18 @@ function assignClusterToRead() {
     clusterLong=${1##*/}
     cluster=${clusterLong%.*}
 
-    java -jar ${picardPath}/picard.jar FilterSamReads I=${firstBam}  O=${clusteredBam}/${cluster}.bam READ_LIST_FILE=${1} SORT_ORDER=coordinate FILTER=includeReadList || die "cannot recover mates for ${1}"
+    grep -Fwf ${1} ${localSam} > ${clusteredBam}/${cluster}.sam
+    samtools view -u -b <(cat ${localHeader} ${clusteredBam}/${cluster}.sam) > ${clusteredBam}/${cluster}.bam && rm ${clusteredBam}/${cluster}.sam || die "cannot generate ${clusteredBam}/${cluster}.bam"
 
-
+    # java -jar ${picardPath}/picard.jar FilterSamReads I=${firstBam}  O=${clusteredBam}/${cluster}.bam READ_LIST_FILE=${1} SORT_ORDER=coordinate FILTER=includeReadList || die "cannot recover mates for ${1}"
   }; export -f recoverClusterBam
 
   # for each high-confidence cluster, recover supporting reads into a separate bam file
   ssec "aggregating alignment clusters"
+  samtools view -H ${firstBam} > ${clusteredBam}/../header.txt && export localHeader="${clusteredBam}/../header.txt" || die "cannot generate sam header"
+  samtools view ${firstBam} > ${clusteredBam}/../full.sam && export localSam="${clusteredBam}/../full.sam" || die "cannot generate full sam"
+
+
   cd ${cr}/clusterTargets && ls *  | parallel -j "${threadCount}" recoverClusterBam {} || die "cannot repair header for all split sams"
   #cd ${cr}/clusterTargets && ls *  | parallel -j 4 recoverClusterBam {} || die "cannot repair header for all split sams"
 
@@ -469,7 +460,7 @@ function assignClusterToRead() {
     local longBase=${1##*/}
     local clusterName=${longBase%.*}
 
-    samtools mpileup -d 0 -f ${myFasta} -B ${1} | cut -f4 | awk '($1 > 5)' > ${pileDir}/${clusterName}.txt
+    samtools mpileup -d 0 -f ${myFasta} -B ${1} 2>/dev/null | cut -f4 | awk '($1 > 5)' > ${pileDir}/${clusterName}.txt 2>/dev/null || die "cannot perform pileup for ${clusterName}"
 
 
   }; export -f pileCluster
@@ -486,24 +477,38 @@ function assignClusterToRead() {
 
 }; export -f assignClusterToRead
 
+# compile all the results into a bed-like file
+function assembleOutput() {
 
-# get the coverage per base across the entire genome
-function perBaseCoverage() {
+  nsec "collating output"
 
-mkdir -p ${mp} 2>/dev/null
-time samtools mpileup -d 0 -f ${myFasta} -o ${mp}/out.txt --output-QNAME ${b}
-samtools mpileup -d 0 -f ${scratch}/sequinData/rnasequin_sequences_2.4.fa -B 408.bam | cut -f1,2,4 > out.txt
-}
+  # test that this function hasn't already been done -- START
+  export assembleOutputComplete="0"
+  if [ -f ${ao}/.complete ]; then
 
-function fetchBed() {
+    # check when the completion veficication was last modified
+    aoModDate=$(stat ${ao}/.complete | grep "Modify" | tr " " "\t" | cut -f2,3 | cut -f1 -d".")
 
-echo "fetchingBed"
+    # tell the user and return from the module
+    ssec "End coordinates already extracted and were last modified at ${aoModDate} --- Returning"
+    export assembleOutputComplete="1"
+  fi
+
+  [ "${assembleOutputComplete}" -eq "1" ] && return 0
+  # test that this function hasn't already been done -- FINISH
+
+  mkdir -p ${ao} 2>/dev/null
+  [ -d "${ao}" ] || die "cannot access ${ao}"
+
+  ssec "calculating decay gradients"
+  python3 ${SCRIPTPATH}/scripts/gradient.py "${pileDir}" || die "cannot calculate gradients"
 
 
-}
+  touch ${ao}/.complete || die "cannot make ${ao}/.complete"
 
-
+}; export -f assembleOutput
 
 
 main || die "cannot do main"
+
 ####################################

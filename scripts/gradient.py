@@ -1,4 +1,6 @@
 # written by A.J. Sethi on 2020-12-09
+# caculates the gradient for each pileup text file
+# provide /path/to/pileups as arg1
 
 import os
 import sys
@@ -9,6 +11,8 @@ import numpy as np
 if len(sys.argv) < 2:
     print("Argument was not provided to gradient.py")
     exit(1)
+
+
 
 # assign $1 to variable $gradpath
 gradPath = sys.argv[1]
