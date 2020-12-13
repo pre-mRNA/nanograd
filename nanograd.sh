@@ -450,7 +450,7 @@ function assignClusterToRead() {
     clusterLong=${1##*/}
     cluster=${clusterLong%.*}
 
-    grep -Fwf ${1} ${localSam} | awk '{gsub(/\N/, "D", $6)} 1' > ${clusteredBam}/${cluster}.sam
+    grep -Fwf ${1} ${localSam} > ${clusteredBam}/${cluster}.sam
     samtools view -u -b <(cat ${localHeader} ${clusteredBam}/${cluster}.sam) > ${clusteredBam}/${cluster}.bam && rm ${clusteredBam}/${cluster}.sam || die "cannot generate ${clusteredBam}/${cluster}.bam"
 
     # java -jar ${picardPath}/picard.jar FilterSamReads I=${firstBam}  O=${clusteredBam}/${cluster}.bam READ_LIST_FILE=${1} SORT_ORDER=coordinate FILTER=includeReadList || die "cannot recover mates for ${1}"
@@ -459,7 +459,7 @@ function assignClusterToRead() {
   # for each high-confidence cluster, recover supporting reads into a separate bam file
   ssec "aggregating alignment clusters"
   samtools view -H ${firstBam} > ${clusteredBam}/../header.txt && export localHeader="${clusteredBam}/../header.txt" || die "cannot generate sam header"
-  samtools view ${firstBam} > ${clusteredBam}/../full.sam && export localSam="${clusteredBam}/../full.sam" || die "cannot generate full sam"
+  samtools view ${firstBam} | awk -F'\t' -v OFS='\t' '{gsub(/\N/, "D", $6)} 1' > ${clusteredBam}/../full.sam && export localSam="${clusteredBam}/../full.sam" || die "cannot generate full sam"
 
 
   cd ${cr}/clusterTargets && ls *  | parallel -j "${threadCount}" recoverClusterBam {} || die "cannot repair header for all split sams"
@@ -522,9 +522,7 @@ function assembleOutput() {
   [ -d "${ao}" ] || die "cannot access ${ao}"
 
   ssec "calculating decay gradients"
-  # python3 ${SCRIPTPATH}/scripts/gradient.py "${pileDir}" || die "cannot calculate gradients"
-  python3 ${SCRIPTPATH}/scripts/gradient.py "/scratch/lf10/as7425/2020-12-08_mousebrain-nanograd/assignClusterToRead/pileup"
-
+  python3 ${SCRIPTPATH}/scripts/gradient.py "${pileDir}" || die "cannot calculate gradients"
 
   ssec "collecting output"
   Rscript ${SCRIPTPATH}/scripts/merge.R --args "${ac}/highConfidenceClusters.bed" "${cr}/output.txt" "${cr}/clusterLength.txt" "${ao}/nanograd_out.txt" && nsec "wrote output to ${ao}/nanograd_out.txt" &>/dev/null || die "cannot call merge.R"
