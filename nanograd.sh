@@ -100,7 +100,7 @@ do
       [ -d ${OPTARG} ] && export cbamDir="${OPTARG}" && cbamList=`ls -d ${OPTARG}/*.*` || die "ccannot find any binary alignments in mature bam directory" # get a list of files in the primary input
       export cbamCount=$(echo $cbamList | grep -c -e ".bam")
       export firstBam=$(echo $cbamList | tr " " "\n" | grep -e ".bam" | cut -f1 | head -n 1); # echo "your bam is ${firstBam}"
-      export firstBamCount=$(samtools view -F 4 ${firstBam} | wc -l) #&& echo ${firstBamCount}
+      export firstBamCount=$(samtools view -F 4 ${firstBam} | wc -l 2>/dev/null) #&& echo ${firstBamCount}
       [ ${cbamCount} -gt "0" ] || die "no binary alignments found in ${cbamDir}"
       ;;
 
@@ -253,7 +253,7 @@ function splitBamThreadCount() {
   [ -d ${sb}/splitRaw ] || die "cannot access sb"
 
   # write the bam header
-  samtools view -H ${firstBam} > ${sb}/header.txt || die "cannot write header"
+  samtools view -H ${firstBam} > ${sb}/header.txt 2>/dev/null || die "cannot write header"
   headCount=$(cat ${sb}/header.txt | wc -l)
   [ ${headCount} -eq "0" ] && die "header empty"
   export header="${sb}/header.txt"

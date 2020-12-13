@@ -37,7 +37,7 @@ for entry in os.scandir(gradPath):
     average_gradient=sum(gradient)/len(gradient) # take the average rate of change
     #print(data_gradient_2)
     #print(type(entry))
-    print(os.path.splitext(os.path.basename(entry.path))[0], abs(round(average_gradient, 5))) # write the cluster name and the average gradient to the output file
+    print(os.path.splitext(os.path.basename(entry.path))[0], abs(round(average_gradient, 8))) # write the cluster name and the average gradient to the output file
 
 f.close() # close the output file
 
