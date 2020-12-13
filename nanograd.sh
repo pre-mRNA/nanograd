@@ -450,7 +450,7 @@ function assignClusterToRead() {
     clusterLong=${1##*/}
     cluster=${clusterLong%.*}
 
-    grep -Fwf ${1} ${localSam} > ${clusteredBam}/${cluster}.sam
+    grep -Fwf ${1} ${localSam} | awk '{gsub(/\N/, "D", $6)} 1' > ${clusteredBam}/${cluster}.sam
     samtools view -u -b <(cat ${localHeader} ${clusteredBam}/${cluster}.sam) > ${clusteredBam}/${cluster}.bam && rm ${clusteredBam}/${cluster}.sam || die "cannot generate ${clusteredBam}/${cluster}.bam"
 
     # java -jar ${picardPath}/picard.jar FilterSamReads I=${firstBam}  O=${clusteredBam}/${cluster}.bam READ_LIST_FILE=${1} SORT_ORDER=coordinate FILTER=includeReadList || die "cannot recover mates for ${1}"
@@ -522,7 +522,9 @@ function assembleOutput() {
   [ -d "${ao}" ] || die "cannot access ${ao}"
 
   ssec "calculating decay gradients"
-  python3 ${SCRIPTPATH}/scripts/gradient.py "${pileDir}" || die "cannot calculate gradients"
+  # python3 ${SCRIPTPATH}/scripts/gradient.py "${pileDir}" || die "cannot calculate gradients"
+  python3 ${SCRIPTPATH}/scripts/gradient.py "/scratch/lf10/as7425/2020-12-08_mousebrain-nanograd/assignClusterToRead/pileup"
+
 
   ssec "collecting output"
   Rscript ${SCRIPTPATH}/scripts/merge.R --args "${ac}/highConfidenceClusters.bed" "${cr}/output.txt" "${cr}/clusterLength.txt" "${ao}/nanograd_out.txt" && nsec "wrote output to ${ao}/nanograd_out.txt" &>/dev/null || die "cannot call merge.R"

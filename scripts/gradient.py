@@ -12,13 +12,11 @@ if len(sys.argv) < 2:
     print("Argument was not provided to gradient.py")
     exit(1)
 
-
-
 # assign $1 to variable $gradpath
 gradPath = sys.argv[1]
 
 # check that gradpath is a valid directory that contains files
-os.path.isdir(gradPath) or print("cannot find gradpath") and exit(1)
+os.path.isdir(gradPath) or print("cannot find gradpath at" + gradPath) and exit(1)
 
 # set working directory to gradpath
 os.chdir(gradPath)
