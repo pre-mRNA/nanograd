@@ -22,8 +22,7 @@ highConfidenceClusters <- cImport %>%
 # identify putative polyA sites and put them in BED format -- START
 by_cluster <- cImport %>%
   group_by(cluster) %>%
-  summarise(count = n()) %>%
-  summarise(position = round(mean(start), 0), chromosome=first(chromosome), strand=first(strand))
+  summarise(count = n(), position = round(mean(start), 0), chromosome=first(chromosome), strand=first(strand))
 
 # create a bed-styled list of polyA sites
 polyA_total_bed <- by_cluster %>%
@@ -37,4 +36,4 @@ polyA_total_bed <- by_cluster %>%
 highConfidenceBed <- subset(polyA_total_bed, cluster %in% highConfidenceClusters$cluster)
 
 # write out the "high confidence clusters" to the output directory
-write_tsv(highConfidenceBed, outdir, col_names = F)
+write_tsv(highConfidenceBed, outdir, col_names = T)

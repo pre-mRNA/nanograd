@@ -22,7 +22,7 @@
 # establish admin functions prior to proceeding
 
 # die function
-die() { printf "$(date +%F)\t$(date +%T)\t[scriptDied] characterise-ExoDUs.sh died because it $*\n"; exit 1; }; export -f die
+die() { printf "$(date +%F)\t$(date +%T)\t[Error] nanograd died because it $*\n"; exit 1; }; export -f die
 
 # new section notification
 nsec() { printf "$(date +%F)\t$(date +%T)\t$*\n"; }; export -f nsec
@@ -59,12 +59,22 @@ export MODE="die"
 
 # check the path to nanograd
 [ -n "${SCRIPTPATH+set}" ] || SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )" || die "cannot get script path"; export SCRIPTPATH="${SCRIPTPATH}" # get the script path, adapted from https://stackoverflow.com/questions/4774054/reliable-way-for-a-bash-script-to-get-the-full-path-to-itself
-nsec "Nanograd is running from ${SCRIPTPATH} with parameters\n\t###\t$@\n\t###\tcommit\t$(git rev-parse --short HEAD 2> /dev/null | sed "s/\(.*\)/@\1/")"
+nsec "Nanograd is running from ${SCRIPTPATH} with parameters\n\t###\t$@\n\t###\tcommit\t$(git rev-parse --short HEAD 2>/dev/null | sed "s/\(.*\)/@\1/")"
 
 ####################################
 
 # process the input arguments
+# process runmode and flagged arguments separately
 
+# runmode
+export urm=$1 # user run mode
+case $urm in
+  (decay) export runmode="d" ;;
+  (cluster) export runmode="c" ;;
+  (*) nsec "user provided invalid runmode -- try 'decay' or 'cluster' next time" && die "detected invalid user runmode" ;;
+esac
+
+# flagged arguments
 ARGS=""
 while [ $# -gt 0 ]
 do
@@ -375,7 +385,7 @@ function clusterStatistics() {
   # arguments are
     # 1: path to output (a file of high-confidence clusters)
   touch ${ac}/highConfidenceClusters.bed || die "test A"
-  Rscript ${SCRIPTPATH}/scripts/cluster.R --args "${ac}/highConfidenceClusters.bed" "${ec}/clusters.txt" &>/dev/null
+  Rscript ${SCRIPTPATH}/scripts/cluster.R --args "${ac}/highConfidenceClusters.bed" "${ec}/clusters.txt" #&>/dev/null
 
   # mark this function as complete
   touch ${ac}/.complete || die "test B"
@@ -405,7 +415,9 @@ function assignClusterToRead() {
   # first, read the bedtools cluster data and make a separate file containing the read names for transcipts within each cluster
   mkdir -p ${cr}/clusterTargets || die "cannot make cluster target directory"
   cd ${cr}/clusterTargets || die "cannot access cluster target directory"
-  echo "awk" && time awk -F "\t" '{print$4>$7}' ${ec}/clusters.txt || die "cannot split cluster file"
+
+  #echo "awk" && time
+  awk -F "\t" '{print$4>$7}' ${ec}/clusters.txt || die "cannot split cluster file"
 
   # delete clusters with supporting reads less than confidence level cl;
   cd ${cr}/clusterTargets || die "cannot get to cluster targets"
@@ -416,8 +428,9 @@ function assignClusterToRead() {
   # filter for clusters with reads >= cl
   function filterCluster() {
   #echo "loop"
-  local clusterCount=$(cat $1 | wc -l)
-  if [ ${clusterCount} -lt "${cl}" ]; then rm $1; fi
+  local clust=$1
+  local clusterCount=$(cat $clust | wc -l)
+  if [ ${clusterCount} -lt "${cl}" ]; then rm $clust || die "cannot remove cluster $clust"; fi
   }; export -f filterCluster
 
   ssec "filtering for clusters with at least ${cl} supporting reads"
@@ -461,7 +474,7 @@ function assignClusterToRead() {
     local longBase=${1##*/}
     local clusterName=${longBase%.*}
 
-    samtools mpileup -d 0 -f ${myFasta} -B ${1} 2>/dev/null | cut -f4 | awk '($1 > 5)' > ${pileDir}/${clusterName}.txt 2>/dev/null || die "cannot perform pileup for ${clusterName}"
+    samtools mpileup -d 0 -f ${myFasta} -B ${1} 2>/dev/null | cut -f4 | awk '($1 > 5)' > ${pileDir}/${clusterName} 2>/dev/null || die "cannot perform pileup for ${clusterName}"
 
 
   }; export -f pileCluster
@@ -472,6 +485,10 @@ function assignClusterToRead() {
 
   # fetch the number of bases per cluster
   cd ${pileDir} && wc -l * | sed '$d' | awk '{print $2, $1}' | sort -k1 -n |  sed 's/.txt//' > ../clusterLength.txt
+
+  # identify clusters with zero length
+  cat ../clusterLength.txt | tr " " "\t" | awk '($2 == 0) {print $1}' > ../zeroTargets.txt
+  for i in $(cat ../zeroTargets.txt); do rm ${pileDir}/${i} 2>/dev/null || die "cannot remove ${i}"; done
 
   # remove .DS_Store if it exists (required for mac)
   rm "${pileDir}/.DS_Store" 2>/dev/null
