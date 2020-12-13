@@ -6,7 +6,7 @@
 # dependencies: recent versions of: samtools, bedtools, R, GNU parallel
 
 # testing;
-# rm -rf "/scratch/lf10/as7425/bamTest"; module load clairo; module load R; module load java; bash ~/nanograd/nanograd.sh -a "/scratch/lf10/as7425/sequinData" -b "/scratch/lf10/as7425/sequinData/" -o "/scratch/lf10/as7425/bamTest" -t "8"
+# rm -rf "/scratch/lf10/as7425/bamTest"; module load clairo; module load R; module load java; time bash ~/nanograd/nanograd.sh cluster -a "/scratch/lf10/as7425/sequinData" -b "/scratch/lf10/as7425/sequinData/" -o "/scratch/lf10/as7425/bamTest" -t "8"
 
 # submit with
 
@@ -69,8 +69,8 @@ nsec "Nanograd is running from ${SCRIPTPATH} with parameters\n\t###\t$@\n\t###\t
 # runmode
 export urm=$1 # user run mode
 case $urm in
-  (decay) export runmode="d" ;;
-  (cluster) export runmode="c" ;;
+  (decay | Decay) export runmode="d" ;;
+  (cluster | Cluster) export runmode="c" ;;
   (*) nsec "user provided invalid runmode -- try 'decay' or 'cluster' next time" && die "detected invalid user runmode" ;;
 esac
 
@@ -385,7 +385,7 @@ function clusterStatistics() {
   # arguments are
     # 1: path to output (a file of high-confidence clusters)
   touch ${ac}/highConfidenceClusters.bed || die "test A"
-  Rscript ${SCRIPTPATH}/scripts/cluster.R --args "${ac}/highConfidenceClusters.bed" "${ec}/clusters.txt" #&>/dev/null
+  Rscript ${SCRIPTPATH}/scripts/cluster.R --args "${ac}/highConfidenceClusters.bed" "${ec}/clusters.txt" &>/dev/null || die "cannot run cluster.R succesfully"
 
   # mark this function as complete
   touch ${ac}/.complete || die "test B"
@@ -524,6 +524,8 @@ function assembleOutput() {
   ssec "calculating decay gradients"
   python3 ${SCRIPTPATH}/scripts/gradient.py "${pileDir}" || die "cannot calculate gradients"
 
+  ssec "collecting output"
+  Rscript ${SCRIPTPATH}/scripts/merge.R --args "${ac}/highConfidenceClusters.bed" "${cr}/output.txt" "${cr}/clusterLength.txt" "${ao}/nanograd_out.txt" && nsec "wrote output to ${ao}/nanograd_out.txt" &>/dev/null || die "cannot call merge.R"
 
   touch ${ao}/.complete || die "cannot make ${ao}/.complete"
 
