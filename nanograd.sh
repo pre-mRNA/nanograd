@@ -59,7 +59,7 @@ export MODE="die"
 
 # check the path to nanograd
 [ -n "${SCRIPTPATH+set}" ] || SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )" || die "cannot get script path"; export SCRIPTPATH="${SCRIPTPATH}" # get the script path, adapted from https://stackoverflow.com/questions/4774054/reliable-way-for-a-bash-script-to-get-the-full-path-to-itself
-nsec "Nanograd is running from ${SCRIPTPATH} with parameters\n\t###\t$@"
+nsec "Nanograd is running from ${SCRIPTPATH} with parameters\n\t###\t$@\n\t###\tcommit\t$(git rev-parse --short HEAD 2> /dev/null | sed "s/\(.*\)/@\1/")"
 
 ####################################
 
@@ -160,7 +160,7 @@ vsec "your cluster confidence level is 25 alignments"
 export od=${outputDirectory}
 export mp="${od}/mpileup"
 export sb="${od}/splitBamThreadCount/"
-export ec="${od}/multiSamToEndCoordinate/"
+export ec="${od}/multiSamToEndCoordinate/" # end coordinate
 export ac="${od}/analyseClusters/"
 export cr="${od}/assignClusterToRead"
 export ao="${od}/assembleOutput"
@@ -415,9 +415,10 @@ function assignClusterToRead() {
 
   # filter for clusters with reads >= cl
   function filterCluster() {
+  #echo "loop"
   local clusterCount=$(cat $1 | wc -l)
-  [ ${clusterCount} -lt "${cl}" ] && rm $1
-}; export -f filterCluster
+  if [ ${clusterCount} -lt "${cl}" ]; then rm $1; fi
+  }; export -f filterCluster
 
   ssec "filtering for clusters with at least ${cl} supporting reads"
   cd ${cr}/clusterTargets/ && ls * | parallel -j ${threadCount} filterCluster {} || die "cannot filter for clusters with more than ${cl} read"
@@ -468,6 +469,9 @@ function assignClusterToRead() {
   # call pileCluster for each cluster
   ssec "piling reads for each cluster"
   cd ${clusteredBam} && ls *.bam | parallel -j "${threadCount}" pileCluster {} || die "cannot repair header for all split sams"
+
+  # fetch the number of bases per cluster
+  cd ${pileDir} && wc -l * | sed '$d' | awk '{print $2, $1}' | sort -k1 -n |  sed 's/.txt//' > ../clusterLength.txt
 
   # remove .DS_Store if it exists (required for mac)
   rm "${pileDir}/.DS_Store" 2>/dev/null

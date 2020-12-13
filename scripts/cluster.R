@@ -22,6 +22,7 @@ highConfidenceClusters <- cImport %>%
 # identify putative polyA sites and put them in BED format -- START
 by_cluster <- cImport %>%
   group_by(cluster) %>%
+  summarise(count = n()) %>%
   summarise(position = round(mean(start), 0), chromosome=first(chromosome), strand=first(strand))
 
 # create a bed-styled list of polyA sites
@@ -29,7 +30,7 @@ polyA_total_bed <- by_cluster %>%
   mutate(start = position -1 ) %>%
   mutate(end = position + 1) %>%
   add_column(score = "1") %>%
-  select(chromosome, start, end, cluster, score, strand)
+  select(chromosome, start, end, cluster, count, strand)
 # identify putative polyA sites and put them in BED format -- END
 
 # filter for bed intervals in the high confidence targets
