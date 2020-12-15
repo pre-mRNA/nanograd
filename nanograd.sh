@@ -89,8 +89,23 @@ do
       a) # annotation
       [ -d ${OPTARG} ] && export input="${OPTARG}" && inputFiles=`ls -d ${OPTARG}/*.*` || die "cannot access files in annotation directory" # get a list of files in the primary input
       gunzipCount=$(echo $inputFiles | grep -c -e ".gz"); if [ ${gunzipCount} -gt "0" ]; then ssec "unzipping ${gunzipCount} files in ${1}"; for i in ${1}/*; do gunzip ${i} || die "cannot unzip ${i} " & done; wait; fi # unzip any .gz files if they are present
-      fastaCount=$(echo $inputFiles |  tr " " "\n" | grep -v ".fai" | grep -c -e ".fasta" -e ".fa" -e "fna"); [ ${fastaCount} -eq "1" ] || die "did not identify a single input fasta in ${1}; identified ${fastaCount}" # check that a fasta of some sort is present
+
+      # ref fasta
+      fastaCount=$(echo $inputFiles |  tr " " "\n" | grep -v ".fai" | grep -c -e ".fasta" -e ".fa" -e "fna"); [ ${fastaCount} -eq "1" ] || die "did not identify a single input fasta in ${1}, identified ${fastaCount}" # check that a fasta of some sort is present
       export myFasta="${input}/$(ls ${OPTARG} |  tr " " "\n" | grep -v ".fai" | grep -e ".fasta" -e ".fa" -e "fna")"
+
+      # fasta index
+      faiCount=$(echo $inputFiles |  tr " " "\n" | grep -c -e ".fai"); [ ${faiCount} -gt "1" ] && die "did not identify a single input fasta index in input, identified ${faiCount} -- try using an annotation directory with a single fasta index" # check that a fasta of some sort is present
+      if [ ${faiCount} -gt "0" ]; then samtools faidx ${myFasta} > ${myFasta}.fai || die "cannot generate fasta index"; fi
+      export myFai="${input}/$(ls ${OPTARG} |  tr " " "\n" | grep ".fai")"
+
+      # genome file
+      genomeCount=$(echo $inputFiles |  tr " " "\n" | grep -c -e ".genome"); [ ${genomeCount} -gt "1" ] && die "did not identify a single input genome index in input, identified ${genomeCount} -- try using an annotation directory with a single bedtools genome file" # check that a fasta of some sort is present
+
+      if [ ${genomeCount} -eq "0" ]; then cat ${myFai} | awk -v OFS='\t' {'print $1,$2'} > ${myFai%??????}.genome  || die "cannot generate fasta index"; fi
+      export myGenome="${input}/$(ls ${OPTARG} |  tr " " "\n" | grep ".genome")"
+
+      # gtf
       GTFCount=$(echo $inputFiles | grep -c ".gtf"); [ "${GTFCount}" -eq "1" ] || die "did not identify a single input gtf in ${1}" # check that a single gtf is present
       export myAnnotation="${input}/$(ls ${OPTARG} | grep -e ".gtf")"
       ;;
@@ -451,7 +466,7 @@ function assignClusterToRead() {
     cluster=${clusterLong%.*}
 
     grep -Fwf ${1} ${localSam} > ${clusteredBam}/${cluster}.sam
-    samtools view -u -b <(cat ${localHeader} ${clusteredBam}/${cluster}.sam) > ${clusteredBam}/${cluster}.bam && rm ${clusteredBam}/${cluster}.sam || die "cannot generate ${clusteredBam}/${cluster}.bam"
+    samtools view -u -b <(cat ${localHeader} ${clusteredBam}/${cluster}.sam) | bedtools bamtobed -splitD -i - | bedtools bedtobam -ubam -g ${myGenome} -i - | samtools sort -l 0 > ${clusteredBam}/${cluster}.bam && rm ${clusteredBam}/${cluster}.sam || die "cannot generate ${clusteredBam}/${cluster}.bam"
 
     # java -jar ${picardPath}/picard.jar FilterSamReads I=${firstBam}  O=${clusteredBam}/${cluster}.bam READ_LIST_FILE=${1} SORT_ORDER=coordinate FILTER=includeReadList || die "cannot recover mates for ${1}"
   }; export -f recoverClusterBam
@@ -459,7 +474,13 @@ function assignClusterToRead() {
   # for each high-confidence cluster, recover supporting reads into a separate bam file
   ssec "aggregating alignment clusters"
   samtools view -H ${firstBam} > ${clusteredBam}/../header.txt && export localHeader="${clusteredBam}/../header.txt" || die "cannot generate sam header"
-  samtools view ${firstBam} | awk -F'\t' -v OFS='\t' '{gsub(/\N/, "D", $6)} 1' > ${clusteredBam}/../full.sam && export localSam="${clusteredBam}/../full.sam" || die "cannot generate full sam"
+  #samtools view ${firstBam} | awk -F'\t' -v OFS='\t' '{gsub(/\N/, "D", $6)} 1' > ${clusteredBam}/../full.sam && export localSam="${clusteredBam}/../full.sam" || die "cannot generate full sam"
+  #^mask gsub as we try to overcome the splicing error using bedtools
+
+  samtools view ${firstBam} > ${clusteredBam}/../full.sam && export localSam="${clusteredBam}/../full.sam" || die "cannot generate full sam"
+
+
+
 
 
   cd ${cr}/clusterTargets && ls *  | parallel -j "${threadCount}" recoverClusterBam {} || die "cannot repair header for all split sams"
@@ -473,10 +494,7 @@ function assignClusterToRead() {
   function pileCluster() {
     local longBase=${1##*/}
     local clusterName=${longBase%.*}
-
-    samtools mpileup -d 0 -f ${myFasta} -B ${1} 2>/dev/null | cut -f4 | awk '($1 > 5)' > ${pileDir}/${clusterName} 2>/dev/null || die "cannot perform pileup for ${clusterName}"
-
-
+    samtools mpileup -d 0 -f ${myFasta} -B ${1} -C 0 -Q 0 2>/dev/null | cut -f4 | awk '($1 > 8)' > ${pileDir}/${clusterName} || die "cannot perform pileup for ${clusterName}"
   }; export -f pileCluster
 
   # call pileCluster for each cluster
@@ -522,7 +540,7 @@ function assembleOutput() {
   [ -d "${ao}" ] || die "cannot access ${ao}"
 
   ssec "calculating decay gradients"
-  python3 ${SCRIPTPATH}/scripts/gradient.py "${pileDir}" || die "cannot calculate gradients"
+  python3 ${SCRIPTPATH}/scripts/gradient.py "${pileDir}" &>/dev/null || die "cannot calculate gradients"
 
   ssec "collecting output"
   Rscript ${SCRIPTPATH}/scripts/merge.R --args "${ac}/highConfidenceClusters.bed" "${cr}/output.txt" "${cr}/clusterLength.txt" "${ao}/nanograd_out.txt" && nsec "wrote output to ${ao}/nanograd_out.txt" &>/dev/null || die "cannot call merge.R"
