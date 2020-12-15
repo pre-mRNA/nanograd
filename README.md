@@ -33,3 +33,5 @@ sh nanograd.sh [run mode] [options] -a "/path/to/fasta/directory" -b "/path/to/b
     col 5: cluster score (i.e. the number of supporting reads)      
     col 6: cluster maximum spliced length (the maximum length in base-pairs for bases in the cluster with more than 5 supporting reads)     
     col 7: [decay mode only] the average decay for transcripts in the cluster, measured in (total reads at position)(base-pairs)^1 along the length of the cluster      
+
+https://twitter.com/kylemorgenstein/status/1338551698332258304?s=21
