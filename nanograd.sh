@@ -33,6 +33,7 @@ ssec() { printf "$(date +%F)\t$(date +%T)\t\t> $*\n"; }; export -f ssec
 # verbose-subsection
 vsec() { if [ "${VERBOSE}" == "TRUE" ]; then printf "$(date +%F)\t$(date +%T)\t\t> $*\n"; fi; }; export -f vsec
 
+
 ####################################
 
 # check for packages and initialize some variables prior to parsing inputs
@@ -87,7 +88,7 @@ do
     case $options in
 
       a) # annotation
-      [ -d ${OPTARG} ] && export input="${OPTARG}" && inputFiles=`ls -d ${OPTARG}/*.*` || die "cannot access files in annotation directory" # get a list of files in the primary input
+      [ -d ${OPTARG} ] && export input="${OPTARG}" && inputFiles=`cd ${OPTARG} && ls *.*` || die "cannot access files in annotation directory" # get a list of files in the primary input
       gunzipCount=$(echo $inputFiles | grep -c -e ".gz"); if [ ${gunzipCount} -gt "0" ]; then ssec "unzipping ${gunzipCount} files in ${1}"; for i in ${1}/*; do gunzip ${i} || die "cannot unzip ${i} " & done; wait; fi # unzip any .gz files if they are present
 
       # ref fasta
@@ -100,8 +101,8 @@ do
       export myFai="${input}/$(ls ${OPTARG} |  tr " " "\n" | grep ".fai")"
 
       # genome file
+      echo $inputFiles
       genomeCount=$(echo $inputFiles |  tr " " "\n" | grep -c -e ".genome"); [ ${genomeCount} -gt "1" ] && die "did not identify a single input genome index in input, identified ${genomeCount} -- try using an annotation directory with a single bedtools genome file" # check that a fasta of some sort is present
-
       if [ ${genomeCount} -eq "0" ]; then cat ${myFai} | awk -v OFS='\t' {'print $1,$2'} > ${myFai%??????}.genome  || die "cannot generate fasta index"; fi
       export myGenome="${input}/$(ls ${OPTARG} |  tr " " "\n" | grep ".genome")"
 
