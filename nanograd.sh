@@ -179,7 +179,7 @@ vsec "your reference sequence is ${myFasta}"
 vsec "Your output directory is ${outputDirectory}"
 
 # report confidence level
-export cl="25"
+export cl="10"
 vsec "your cluster confidence level is 25 alignments"
 
 # define some variables (doing this here because functions are being modularised and these variables might be required if an antecedent function is skipped)
