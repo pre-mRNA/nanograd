@@ -7,7 +7,7 @@
 # R modules; tidyverse, runner, zoo, data.table, scales, ggpubr
 
 # testing;
-# rm -rf "/scratch/lf10/as7425/bamTest"; module load clairo; module load R; module load java; time bash ~/nanograd/nanograd.sh cluster -a "/scratch/lf10/as7425/sequinData" -b "/scratch/lf10/as7425/sequinData/" -o "/scratch/lf10/as7425/bamTest" -t "8"
+# rm -rf "/scratch/lf10/as7425/bamTest"; module load clairo; module load R; module load java; time bash /home/150/as7425/nanograd/nanograd_v2/nanograd.sh cluster -a "/scratch/lf10/as7425/sequinData" -b "/scratch/lf10/as7425/sequinData/" -o "/scratch/lf10/as7425/bamTest" -t "8"
 
 # submit with
 
@@ -102,6 +102,7 @@ do
       export myFai="${input}/$(ls ${OPTARG} |  tr " " "\n" | grep ".fai")"
 
       # genome file
+      # do we still need this?
       echo $inputFiles
       genomeCount=$(echo $inputFiles |  tr " " "\n" | grep -c -e ".genome"); [ ${genomeCount} -gt "1" ] && die "did not identify a single input genome index in input, identified ${genomeCount} -- try using an annotation directory with a single bedtools genome file" # check that a fasta of some sort is present
       if [ ${genomeCount} -eq "0" ]; then cat ${myFai} | awk -v OFS='\t' {'print $1,$2'} > ${myFai%??????}.genome  || die "cannot generate fasta index"; fi
@@ -116,9 +117,10 @@ do
       b) # path to alignment
       [ -d ${OPTARG} ] && export cbamDir="${OPTARG}" && cbamList=`ls -d ${OPTARG}/*.*` || die "ccannot find any binary alignments in mature bam directory" # get a list of files in the primary input
       export cbamCount=$(echo $cbamList | grep -c -e ".bam")
-      export firstBam=$(echo $cbamList | tr " " "\n" | grep -e ".bam" | cut -f1 | head -n 1); # echo "your bam is ${firstBam}"
+      export firstBam=$(echo $cbamList | tr " " "\n" | grep ".*\.bam$" | cut -f1 | head -n 1); # echo "your bam is ${firstBam}"
       export firstBamCount=$(samtools view -F 4 ${firstBam} | wc -l 2>/dev/null) #&& echo ${firstBamCount}
-      [ ${cbamCount} -gt "0" ] || die "no binary alignments found in ${cbamDir}"
+      [ ${cbamCount} -gt "0" ] || die "no binary alignments found in ${cbamDir}" # test that the first bam isn't empty
+      export myBam=${firstBam} # to work with legacy code
       ;;
 
       o) # output directory
@@ -140,8 +142,6 @@ do
       if [ ${OPTARG} == "TRUE" ]; then export VERBOSE="TRUE"; else export VERBOSE="false"; fi
       ssec "Proceeding in verbose mode"
       ;;
-
-
 
       # runmode currently deprecated
       #m) # runmode; test if we want to run the entire index or just a specific region
@@ -179,14 +179,13 @@ vsec "your reference sequence is ${myFasta}"
 [ -d "${outputDirectory}" ] || die "did not detect a valid output directory"
 vsec "Your output directory is ${outputDirectory}"
 
-# report confidence level
-export cl="10"
-vsec "your cluster confidence level is 25 alignments"
 
 # define some variables (doing this here because functions are being modularised and these variables might be required if an antecedent function is skipped)
+# this is the new section
 export od=${outputDirectory}
-export mp="${od}/mpileup"
-export sb="${od}/splitBamThreadCount/"
+export db="${od}/desplitBam/"
+
+# these are old
 export ec="${od}/multiSamToEndCoordinate/" # end coordinate
 export ac="${od}/analyseClusters/"
 export cr="${od}/assignClusterToRead"
@@ -196,7 +195,7 @@ export ao="${od}/assembleOutput"
 ssec "proceeding with ${threadCount} threads"
 
 # also define the quarter threadcount for downstream processing
-export quarter_tc=$((${threadCount}/4)) # divid threadcout by 4
+export quarter_tc=$((${threadCount}/4)) # divide threadcout by 4
 export qtc=$(echo $quarter_tc | awk '{print int($1+0.5)}') # round down
 
 # validate the runmode
@@ -204,19 +203,22 @@ export qtc=$(echo $quarter_tc | awk '{print int($1+0.5)}') # round down
 # [[ ${MODE} == "die" ]] && nsec "exiting due to mode die" && exit 0
 # ssec "your runmode is ${MODE}"
 
+echo "first bam is ${firstBam}"
 echo "testing done" && exit 0
 ####################################
 
 # we use the "main" function to call oter functions as reqired
 main() {
 
-  splitBamThreadCount || die "cannot split"
-  multiSamToEndCoordinate || die "cannot fetch end coordinates"
-  clusterStatistics || die "cannot analyse 3' end clusters"
-  assignClusterToRead || die "cannot assign clusters to reads"
-  assembleOutput || die "cannot assembly output"
-  nsec "nanograd completed succesfully - thanks for testing it :)"
-  exit 0
+
+  # new workflow
+  # bash section
+  desplitBam || die "could not succesfully complete desplitBam function"
+  pileupBam || die "could not succesfully complete pileupBam function"
+
+  # R section
+
+
 
 
   # if [ "$nm" -lt "2" ]
@@ -248,3 +250,20 @@ main() {
 
   die "no further instructions provided"
 }
+
+# desplit is not required for transcriptomeic alignments is it?
+# however there is no harm in doing it
+desplitBam() {
+  mkdir -p ${db} 2>/dev/null
+  cd ${db} || die "cannot find folder ${db}"
+  bedtools bamtobed -split -i ${myBam} | bedtools bedtobam -ubam -g ${myGenome} -i - | samtools sort > ${db}/desplit.bam || die "cannot desplit your bam ${myBam}"
+  samtools index ${db}/desplit.bam || die "cannot index desplit bam"
+}; export -f desplitBam
+
+pileupBam () {
+  samtools mpileup -d 0 -f ${myFasta} -B ${db}/desplit.bam -C 0 -Q 0 -q 0 > ${db}/pileup.txt || die "cannot perform pileup"
+}; export -f pileupBam
+
+analysePileup() {
+    Rscript ${SCRIPTPATH}/scripts/merge.R --args "${ac}/highConfidenceClusters.bed" "${cr}/output.txt" "${cr}/clusterLength.txt" "${ao}/nanograd_out.txt" && nsec "wrote output to ${ao}/nanograd_out.txt" &>/dev/null || die "cannot call merge.R"
+}; export -f analysePileup
