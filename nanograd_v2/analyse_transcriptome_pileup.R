@@ -10,6 +10,11 @@ args <- commandArgs()
 outdir <- args[7]
 infile <- args[8]
 
+args <- commandArgs()
+outdir <- args[7] # to confirm
+infile <- args[8] # to confirm
+
+print(args)
 
 # libs
 library(tidyverse)
@@ -22,10 +27,16 @@ library(ggpubr) # used for qqplot
 
 ### part 1. data preprocessing
 {
-  # import transcriptome data
-  import_pileup_data <- read_tsv("../localGadiData/2021-02-22_desplice_filtLib_trimmed.txt.gz", col_names = F, col_types = "cddd") %>%
-    rename(transcript = 1, coord = 2, wt = 3, mut = 4) %>%
-    dplyr::select(transcript, coord, wt, mut)
+  # import transcriptome data LOCAL
+  # import_pileup_data <- read_tsv("../localGadiData/2021-02-22_desplice_filtLib_trimmed.txt.gz", col_names = F, col_types = "cddd") %>%
+  #  rename(transcript = 1, coord = 2, wt = 3, mut = 4) %>%
+  #  dplyr::select(transcript, coord, wt, mut)
+
+  # import transcriptome data Gadi
+    import_pileup_data <- read_tsv(infile, col_names = F, col_types = "cdcd") %>%
+      rename(transcript = 1, coord = 2, base = 3, wt = 4) %>%
+      dplyr::select(transcript, coord, base, wt)
+
 
   imporx_tx_count <- import_pileup_data %>% group_by(transcript) %>% n_groups()
   print(paste("on import, there are", imporx_tx_count, "transcripts identified", sep = " "))
