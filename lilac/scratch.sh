@@ -61,3 +61,19 @@ supportedIntronCount=$(awk '{ s+=$5 } END { print s }' /scratch/lf10/as7425/lila
 echo $supportedIntronCount
 
 }
+
+# calculate percentage alignment rate
+{
+
+# count bases in alignment
+time alignedBases=$(bedtools bamtobed -splitD -i /g/data/lf10/as7425/2020-11_mouseBrain/analysis/2021-07-12_all-pass-read-splicing/sorted.all_pass_reads.bam | bedtools genomecov -bga -g /g/data/lf10/as7425/genomes/mouse_genome/Mus_musculus.GRCm38.dna.primary_assembly..genome -i stdin  | awk '{s+=$4}END{print s}')
+# 2715076878 bases
+# computed in 4m23.491s
+
+# count bases in fastq
+time totalBases=$(cat /g/data/lf10/as7425/2020-11_mouseBrain/analysis/2021-07-12_all-pass-read-splicing/all_pass_reads.fastq |  paste - - - - | cut -f2 | wc -c)
+# 3591545446 bases
+# computed in 27 seconds
+
+
+}

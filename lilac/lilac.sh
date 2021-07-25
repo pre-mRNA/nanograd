@@ -11,8 +11,8 @@
 
 # submit with
 
-# -a /path/to/folder/with/annotations (i.e. fasta + gtf)
-# -b /path/to/query/alignment.bam (musted be sorted and indexed with index located at /path/to/query/alignment.bam.bai)
+# -a /path/to/folder/with/annotations (i.e. fasta + gtf + genome); note genome = bedtools genome, which can be extracted from the BAM header
+# -b /path/to/query/data/; cotaining a single .bam (musted be sorted and indexed with index located at /path/to/query/alignment.bam.bai) and fastq
 # -o /path/to/output/output/directory
 # -t /preferred/threadcount
 
@@ -106,6 +106,7 @@ do
       [ -d ${OPTARG} ] && export cbamDir="${OPTARG}" && cbamList=`ls -d ${OPTARG}/*.*` || die "ccannot find any binary alignments in mature bam directory" # get a list of files in the primary input
       export cbamCount=$(echo $cbamList | grep -c -e ".bam")
       export firstBam=$(echo $cbamList | tr " " "\n" | grep -e ".bam" | cut -f1 | head -n 1); # echo "your bam is ${firstBam}"
+      export myFastq=$(echo $cbamList | tr " " "\n" | grep -e ".fastq" | cut -f1 | head -n 1); # echo "your bam is ${firstBam}"
       export firstBamCount=$(samtools view -F 4 ${firstBam} | wc -l 2>/dev/null) #&& echo ${firstBamCount}
       [ ${cbamCount} -gt "0" ] || die "no binary alignments found in ${cbamDir}"
       ;;
@@ -148,7 +149,6 @@ vsec "Your output directory is ${outputDirectory}"
 # define some variables (doing this here because functions are being modularised and these variables might be required if an antecedent function is skipped)
 export od=${outputDirectory}
 export gi="${od}/generateIntrons"
-export mp="${od}/mpileup"
 
 # validate threadCount
 ssec "proceeding with ${threadCount} threads"
@@ -161,8 +161,9 @@ export qtc=$(echo $quarter_tc | awk '{print int($1+0.5)}') # round down
 
 # we use the "main" function to call other functions as reqired
 main() {
-  analyseSplicing || die "cannot analyse splicing"
-  echo "lilac exiting" && exit 0
+  analyseSplicing || die "cannot analyse splicing" &
+  analyseMapping || die "cannot analyse mapping" & 
+  wait && echo "lilac exiting succesfully" && exit 0
 }
 
 # define a function to generate bed intervals of introns from a reference gtf
@@ -205,6 +206,22 @@ function analyseSplicing() {
   printf "total introns\t${totalIntronCount}\nsupported introns\t${supportedIntronCount}\n" > ${od}/splicing_metrics.txt
 
 }; export -f analyseSplicing
+
+function analyseMapping() {
+
+  # count bases in alignment
+  export alignedBases=$(bedtools bamtobed -splitD -i ${firstBam} | bedtools genomecov -bga -g ${myGenome} -i stdin  | awk '{s+=$4}END{print s}' || die "cannot compute aligned bases")
+  # 2715076878 bases
+  # computed in 4m23.491s
+
+  # count bases in fastq
+  export totalBases=$(cat ${myFastq} |  paste - - - - | cut -f2 | wc -c)
+  # 3591545446 bases
+  # computed in 27 seconds
+
+  printf "total bases\t${totalBases}\naligned bases\t${alignedBases}\n" > ${od}/alignment_metrics.txt
+
+}; export -f analyseMapping
 
 
 main || die "cannot do main"
