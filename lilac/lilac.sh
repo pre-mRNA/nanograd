@@ -162,7 +162,7 @@ export qtc=$(echo $quarter_tc | awk '{print int($1+0.5)}') # round down
 # we use the "main" function to call other functions as reqired
 main() {
   analyseSplicing || die "cannot analyse splicing" &
-  analyseMapping || die "cannot analyse mapping" & 
+  analyseMapping || die "cannot analyse mapping" &
   wait && echo "lilac exiting succesfully" && exit 0
 }
 
@@ -215,7 +215,7 @@ function analyseMapping() {
   # computed in 4m23.491s
 
   # count bases in fastq
-  export totalBases=$(cat ${myFastq} |  paste - - - - | cut -f2 | wc -c)
+  export totalBases=$(cat ${myFastq} | paste - - - - | cut -f2 | wc -c)
   # 3591545446 bases
   # computed in 27 seconds
 

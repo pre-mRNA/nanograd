@@ -75,5 +75,6 @@ time totalBases=$(cat /g/data/lf10/as7425/2020-11_mouseBrain/analysis/2021-07-12
 # 3591545446 bases
 # computed in 27 seconds
 
+2715076878/3591545446
 
 }
