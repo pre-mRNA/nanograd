@@ -104,7 +104,79 @@ ggplot(txabund %>% select(-read) %>% filter(tx == "ENSMUST00000097014.7"), aes(x
 decay <- txabund %>% 
   select(-read, -nread) %>% 
   group_by(tx) %>% 
-  mutate(df = median(map_len), cov = n())
+  summarise(df = median(map_len), cov = n())
+
+# plot a histogram of coverage per transcript 
+ggplot(decay, aes(x = cov)) +
+  stat_ecdf() + 
+  theme_bw() + 
+  theme(text = element_text(size=12)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  ggtitle("Distribution of counts per transcript from 1m reads") + 
+  xlab("Counts per transcript") + ylab("Percentile") + 
+  scale_x_log10()
 
 # plot a histogram of decay factor 
+ggplot(decay %>% filter(cov > 50), aes(x = df)) +
+  geom_histogram(bins = 100) + 
+  theme_bw() + 
+  theme(text = element_text(size=12)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  ggtitle("D50 distribution for transcripts with >50 reads") + 
+  xlab("D50") + ylab("Count") 
+
+# calculate mean and std.dev df at 50 reads 
+tmp <- decay %>% filter(cov > 49)
+mean(tmp$df)  
+sqrt(var(tmp$df))
+
+# plot coverage vs d50
+ggplot(decay %>% filter(cov > 49), aes(x = cov, y = df)) +
+  geom_point(alpha=0.25) + 
+  theme_bw() + 
+  theme(text = element_text(size=12)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  ggtitle("Total coverage vs d50") + 
+  xlab("Transcript coverage") + ylab("Transcript d50")+ 
+  scale_x_log10() + scale_y_log10()
+
+# check correlation 
+cor.test(tmp$cov, tmp$df)
+
+############################################################
+############################################################
+############################################################
+
+# import transcript attributes 
+library(GenomicFeatures)
+library(rtracklayer)
+
+# process the annotation 
+anno <- "/Users/asethi/localGadiData/2022-03-15_develop-nanograd4/Mus_musculus.GRCm39.104.chr.gtf"
+
+# read in reference transcripts
+gtf <- makeTxDbFromGFF(file=anno, format = "gtf")
+
+# make an exon database from the reference transcripts 
+exons <- exonsBy(gtf, "tx", use.names=TRUE)
+
+# convert the transcripts to a tibble
+exons_tib <- as_tibble(as(exons, "data.frame"))
+
+# fetch the lengthe of each transcript segment from the gtf 
+txlen <- transcriptLengths(gtf, with.cds_len=TRUE, with.utr5_len=TRUE, with.utr3_len=TRUE) %>% 
+  as_tibble() %>% 
+  mutate(diff = tx_len - cds_len - utr5_len - utr3_len) %>% 
+  dplyr::rename(transcript_id = tx_name) %>% 
+  dplyr::select(-tx_id, -nexon, -gene_id, -diff)
+
+# the last command doesn't store biotype, so we read in the gtf again using another package 
+tx_biotype <- rtracklayer::import(anno) %>% 
+  as_tibble() %>% 
+  dplyr::select(transcript_id, transcript_biotype, gene_name, gene_id) %>% 
+  na.omit() %>% 
+  distinct()
+
+# merge the biotypes with the transcript segment lengths 
+merged_metadata <- inner_join(tx_biotype, txlen, by = "transcript_id")
 
