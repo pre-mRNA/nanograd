@@ -6,6 +6,7 @@
 # process a bam file to get genome coverage
 export bam=$1
 export twd=$2
+export annotation=$3
 
 # convert the bam to bed (smoothes indels)
 bedtools bamtobed -split -i ${bam} > ${twd}/remove_indel.bed
@@ -15,3 +16,5 @@ samtools view -H ${bam} | grep @SQ | sed 's/@SQ\tSN:\|LN://g' >  ${twd}/genome.t
 
 # compute genome coverage
 bedtools genomecov -i ${twd}/remove_indel.bed -g ${twd}/genome.txt -dz > ${twd}/coverage.txt
+
+# call R script (to be written)
