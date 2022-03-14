@@ -12,6 +12,10 @@ input <- read_tsv("/Users/asethi/localGadiData/2022-03-15_develop-nanograd4/mous
   mutate(seq_len = nchar(seq)) %>% 
   select(-seq) 
 
+############################################################
+############################################################
+############################################################
+
 # parse CIGAR 
 matcher <- function(pattern, x) {
   ind = gregexpr(pattern, x)[[1]]
@@ -35,6 +39,10 @@ addcig <- input %>%
   rowwise %>% mutate(map_len = cigarsums(cig)) %>% 
   select(-cig)
 
+############################################################
+############################################################
+############################################################
+
 # plot seq length vs map length 
 ggplot(addcig, aes(x = seq_len, y = map_len)) + 
   geom_bin2d() +  
@@ -48,4 +56,43 @@ ggplot(addcig, aes(x = seq_len, y = map_len)) +
 
 # check pearson correlation 
 cor.test(addcig$seq_len, addcig$map_len, method="pearson")
+
+############################################################
+############################################################
+############################################################
+
+rm(input)
+rm(addcig)
+
+# calculate transcript abundance 
+txabund <- addcig %>% 
+  group_by(tx) %>% 
+  mutate(nread = n()) %>% 
+  arrange(desc(nread)) %>% 
+  ungroup()
+
+# most abundant read 
+# ENSMUST00000082390.1; 35990 reads 
+
+# make a scatterplot of seq len vs map len for most abundant read 
+ggplot(txabund %>% select(-read) %>% filter(tx == "ENSMUST00000082390.1"), aes(x = seq_len, y = map_len)) + 
+  geom_point() +  
+  theme_bw() + 
+  theme(text = element_text(size=12)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  ggtitle("Sequence length vs alignment length for mt-Rnr2-201") + 
+  xlab("Sequence length (nt)") + ylab("Alignment M length (nt)") + 
+  scale_x_log10() + 
+  scale_y_log10()
+
+# make a scatterplot of seq len vs map len for second most abundant read 
+ggplot(txabund %>% select(-read) %>% filter(tx == "ENSMUST00000097014.7"), aes(x = seq_len, y = map_len)) + 
+  geom_point() +  
+  theme_bw() + 
+  theme(text = element_text(size=12)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  ggtitle("Sequence length vs alignment length for Tuba1a") + 
+  xlab("Sequence length (nt)") + ylab("Alignment M length (nt)") + 
+  scale_x_log10() + 
+  scale_y_log10()
 
