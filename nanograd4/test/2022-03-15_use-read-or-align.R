@@ -96,3 +96,15 @@ ggplot(txabund %>% select(-read) %>% filter(tx == "ENSMUST00000097014.7"), aes(x
   scale_x_log10() + 
   scale_y_log10()
 
+############################################################
+############################################################
+############################################################
+
+# calculate decay factor 
+decay <- txabund %>% 
+  select(-read, -nread) %>% 
+  group_by(tx) %>% 
+  mutate(df = median(map_len), cov = n())
+
+# plot a histogram of decay factor 
+
