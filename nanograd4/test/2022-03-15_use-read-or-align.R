@@ -102,7 +102,7 @@ ggplot(txabund %>% select(-read) %>% filter(tx == "ENSMUST00000097014.7"), aes(x
 
 # calculate decay factor 
 decay <- txabund %>% 
-  select(-read, -nread) %>% 
+  dplyr::select(-read, -nread) %>% 
   group_by(tx) %>% 
   summarise(df = median(map_len), cov = n())
 
@@ -180,3 +180,57 @@ tx_biotype <- rtracklayer::import(anno) %>%
 # merge the biotypes with the transcript segment lengths 
 merged_metadata <- inner_join(tx_biotype, txlen, by = "transcript_id")
 
+rm(gtf, exons, exons_tib, txlen, tx_biotype, tmp)
+
+# join data to decay 
+decay2 <- inner_join(decay %>% separate(tx, into=c("transcript_id", "transcript_version"), sep = "([.])", extra = "merge") %>% dplyr::select(-transcript_version), 
+                     merged_metadata, by = "transcript_id") %>% 
+  mutate(df_ratio = df / tx_len)
+
+# clean 
+rm(decay, merged_metadata)
+
+############################################################
+############################################################
+############################################################
+
+# make plots using annotation information 
+
+# check how many tx with 20 or more reads 
+decay2 %>% filter(cov > 19) %>% dim()
+
+# plot coverage vs d50
+ggplot(decay2 %>% filter(cov > 19), aes(x = tx_len, y = df)) +
+  geom_bin2d(bins = 100) + 
+  theme_bw() + 
+  theme(text = element_text(size=12)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  ggtitle("Transcript length vs d50 at coverage > 20") + 
+  xlab("Annotated transcript length") + ylab("Transcript d50")+ 
+  scale_x_log10() + scale_y_log10() + 
+  geom_abline(intercept = 0, slope = 1)
+
+cor.test(decay2$tx_len, decay2$df)
+# 0.294
+
+# make a histogram of d50:len ratio 
+ggplot(decay2 %>% filter(cov > 19), aes(x = df_ratio)) +
+  geom_histogram(bins = 65, fill="cornflowerblue") + 
+  theme_bw() + 
+  theme(text = element_text(size=12)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  ggtitle("D50:txlen distribution for transcripts with >20 reads") + 
+  xlab("D50:len ratio") + ylab("Count") 
+
+median(decay2$df_ratio)
+# 0.325 
+
+# plot an ecdf of ratio 
+# plot a histogram of coverage per transcript 
+ggplot(decay2 %>% filter(cov > 19), aes(x = df_ratio)) +
+  stat_ecdf() + 
+  theme_bw() + 
+  theme(text = element_text(size=12)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  ggtitle("Distribution of df:tl ratio for tx with >20 reads") + 
+  xlab("df:tl ratio") + ylab("Percentile") 
