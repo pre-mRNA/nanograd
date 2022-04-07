@@ -12,6 +12,7 @@
 # R modules; tidyverse, runner, zoo, data.table, scales, ggpubr
 
 # testing;
+# melbourne iMac
 # time bash nanograd4.sh /Users/asethi/localGadiData/2022-03-15_develop-nanograd4/allReadsTranscriptome_EnsemblnoPseudo.bam /Users/asethi/localGadiData/2022-03-15_develop-nanograd4/Mus_musculus.GRCm39.104.chr.gtf /Users/asethi/localGadiData/2022-03-15_develop-nanograd4/test_out.txt
 
 # additional flags (to be implemented)
