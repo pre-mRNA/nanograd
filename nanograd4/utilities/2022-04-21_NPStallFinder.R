@@ -11,8 +11,8 @@ ggplot(a, aes(x = position, y = event_level_mean)) +
   theme(plot.margin = margin(1,1,1,1, "cm"))
 
 # split data so that each signal (col 14) has a new line 
-b <- separate_rows(a, current, convert = TRUE) %>% 
-  mutate(id = seq(1:nrow(b))) %>%  # add time data 
+b <- separate_rows(a, current, convert = TRUE) 
+b <- b %>% mutate(id = seq(1:nrow(b))) %>%  # add time data 
   mutate(time = id / 3200) %>% # convert each observation to a time value by dividing by 3200 
   mutate(event_status = case_when(
     model_kmer == "NNNNN" ~ "Missed event", # mutate to add 'missed_event' label to certain kmers 
@@ -25,15 +25,14 @@ ggplot(b %>% arrange(event_status), aes(x = time, y = current)) +
   scale_alpha_manual(values = c("Missed event" = 0.6, "Aligned event"=0.5)) + 
   theme(text=element_text(size=18)) + 
   theme(plot.margin = margin(0.2,0.2,0.2,0.2, "cm")) + 
-  ylim(50,150) + 
   geom_line(aes(x = time, y = current), alpha = 0.2) + 
   xlab("time (seconds)") + 
   ylab("current (mA)") + 
-  theme(legend.position = "none")
+  theme(legend.position = "none") + 
+  xlim(50,60)
   
-  
-ggplot(my_df %>% arrange(a)) +
-  geom_point(aes(x = b, y = c, color = a), size = 10) +
-  scale_colour_manual(values = c("azure3", "blue")) +
-  scale_size_manual(values =c(1, 5)) + 
-  
+# bash command to find N-rich sequences from nanopolish eventalign output 
+# time head -n 50000000 *txt | grep "NNNNN" | cut -f4 | tail -n +2 | uniq -c | sort -k1 -nr | head -n 20
+# cat <(cat *txt | head -n 1) <(head -n 5000000 *txt | grep "92b303ed-bdcf-41e1-913c-5b7f99248a24") > ~/toLocal/nanopolish_test.txt
+
+
