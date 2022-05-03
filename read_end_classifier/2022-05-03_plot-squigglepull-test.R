@@ -19,7 +19,7 @@ a <- read_tsv("/Users/asethi/localGadiData/2022-05-03_nanograd4-squigglekit-test
   mutate(time = time / 3200, reverse_time = reverse_time / 3200) 
 
 ggplot(a, aes(x = time, y = current)) + 
-  geom_point(size = 0.2) + 
+  geom_point(size = 0.1, alpha = 0.5) + 
   geom_line(aes(x = time, y = current), alpha = 0.2) 
 
 # reverse time
