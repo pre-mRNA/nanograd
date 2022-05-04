@@ -46,6 +46,7 @@ echo "a3f8f3ad-594f-4260-a757-631cc0b40ab9" | gzip -c > ${wd}/squigglekit/target
 cat /g/data/xc17/kat_nm/fastqs/NEP1_Mut_Replicate1/sequencing_summary.txt | gzip -c > ${wd}/squigglekit/sequencing_summary.txt.gz
 
 # call fast5 fetcher
+export export wd="/g/data/lf10/as7425/nanograd/analysis/2022-05-02_test-squigglekit"
 export mr2seq="/g/data/xc17/kat_nm/Sequencing_round2/NEP1_S2/NEP1_KD_sample2/20211029_1236_MN38051_FAP77920_e9bffbe8/fast5_gzip"
 fast5_fetcher="/g/data/lf10/as7425/apps/SquiggleKit/fast5_fetcher_multi.py"
 
@@ -60,3 +61,20 @@ SquigglePull="/g/data/lf10/as7425/apps/SquiggleKit/SquigglePull.py"
 python $SquigglePull -p ${mr2seq} -v -r > ${wd}/squigglekit/read_1.tsv
 
 # download data and open in R
+
+# search the original file for a read
+# fetch 5 reads from Kat's mutant_rep1 (nep1) sequencing containing the modified site
+eventAlign="/g/data/xc17/kat_nm/NanoPolish/NEP1_Replicate1/NEP_Replicate1_nanopolish.txt"
+read="071928ed-64d3-4b5e-8108-a7b0a1ca07d4"
+module load parallel
+
+zcat ${eventAlign} | grep "${read}"
+
+# final read of interest: 071928ed-64d3-4b5e-8108-a7b0a1ca07d4
+
+eventAlign="/g/data/xc17/kat_nm/NanoPolish/NEP1_Replicate1/NEP_Replicate1_nanopolish.txt"
+read="071928ed-64d3-4b5e-8108-a7b0a1ca07d4"
+module load parallel
+export export wd="/g/data/lf10/as7425/nanograd/analysis/2022-05-02_test-squigglekit"
+
+time < "${eventAlign}" parallel --pipe --block 1000M grep -i -C 5 "${read}" >> ${wd}/out_071928ed-64d3-4b5e-8108-a7b0a1ca07d4_eventAlign.tsv
