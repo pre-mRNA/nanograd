@@ -6,7 +6,15 @@
 # taking salmon transcript quantification of Agin's HEK293 DRS reads as input 
 
 # to run, direct salmon_output to the correct path for salmon output on your machine 
-salmon_output <- ("~/localGadiData/2022-05-05_KW-Salmon-DTU")
+salmon_output <- ("~/localGadiData/2022-05-05_KW-Salmon-DTU") # AJ's iMac
+
+# also provide the human annotation in GTF format 
+human_annotation <- "~/localGadiData/2022-05-05_KW-Salmon-DTU/Homo_sapiens_transcriptsOnly_GRCh38.104.chr.gtf"
+
+# AS: I filtered the annotation for 'transcript' categories before downloading it to save space on my Mac 
+# The filtering command I used is: 
+# $ cat all.gtf | awk '($3 == "transcript"){print}' > transcripts.gtf
+
 
 ####################################################################################################
 ####################################################################################################
@@ -21,36 +29,61 @@ library(tximport)
 # don't need to load this if you import tidyverse 
 
 # library(ggplot2) 
-# don't need to load this if you import tidyverse 
+# AS: don't need to load this if you import tidyverse 
 
 # library(BiocManager) 
-# don't need to load this unless you're installing packages from BioConductor 
+# AS: don't need to load this unless you're installing packages from BioConductor 
 
 # list all files
 # setwd("") 
-# don't need to do this because you can specify path in list.files() - working directory should stay same as Rproj 
+# AS: don't need to do this because you can specify path in list.files() - working directory should stay same as Rproj 
 
-# specify path (in variable salmon_output) to list.files() directly 
+# AS: specify path (in variable salmon_output) to list.files() directly 
 files <- list.files(salmon_output, pattern = "quant.sf", full.names = TRUE, recursive = TRUE)
 names(files) <- files
 all(file.exists(files))
 
-# make tx2gene file
+##################################################
+##################################################
 
-# tx2gene is a dataframe not a file
+# make tx2gene file
+# AS: note that tx2gene is a dataframe not a file
 
 # library(ensembldb)
 # library(AnnotationHub)
+# AS: I don't like this approach because I dont' want to download this to some random location in my local machine 
+# AS: It's also harder to version control because annotationhub is continously updated, 
+# e.g. because the version of R on my computer was slightly old, I couldn't access ah[["AH98047"]]
 
-ah <- AnnotationHub()
+# ah <- AnnotationHub()
 # query(ah, "EnsDb.Hsapiens")
 # edb <- ah[["AH98047"]] # how did you get this? It's not in the query
 # txs <- transcripts(edb, return.type = "DataFrame")
 # txs
 # tx2gene <- data.frame(txs$tx_id_version, txs$gene_id)
 
-# import files 
-txi <- tximport(files, type = "salmon", tx2gene = tx2gene)
+##################################################
+##################################################
+
+# AS: I use a different approach to make the tx2gene dataframe 
+# AS: Imort rtracklayer to be able to read in a GTF as an R object 
+library(rtracklayer)
+
+# AS: Import annotation and combine transcript id with transcript version 
+tx_gene_map <- rtracklayer::import(human_annotation) %>% 
+  as_tibble() %>% # AS: Convert to tibble format as soon as possible 
+  dplyr::select(transcript_id, transcript_version, transcript_biotype, gene_name, gene_id) %>% 
+  unite(col = "transcript", c(transcript_id, transcript_version), sep = ".") %>% 
+  dplyr::rename(gene = gene_name) %>% 
+  dplyr::select(transcript, gene) %>% 
+  na.omit() %>% 
+  distinct() 
+
+##################################################
+##################################################
+
+# import salmon files into R using the transcript annotation we just made 
+txi <- tximport(files, type = "salmon", tx2gene = tx_gene_map %>% as_data_frame())
 
 # load DESeq2
 library(DESeq2)
