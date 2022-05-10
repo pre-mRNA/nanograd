@@ -9,7 +9,7 @@
 salmon_output <- ("~/localGadiData/2022-05-05_KW-Salmon-DTU") # AJ's iMac
 
 # also provide the human annotation in GTF format 
-human_annotation <- "~/localGadiData/2022-05-05_KW-Salmon-DTU/Homo_sapiens.GRCh38.104.chr.gtf"
+human_annotation <- "~/localGadiData/2022-05-05_KW-Salmon-DTU/Homo_sapiens_transcriptsOnly_GRCh38.104.chr.gtf"
 
 # AS: I filtered the annotation for 'transcript' categories before downloading it to save space on my Mac 
 # The filtering command I used is: 
@@ -99,10 +99,11 @@ rld <- rlog(dds)
 head(assay(rld))
 plotPCA(rld,intgroup = "condition")
 
-png("PCA_rlog_DDS.png")
-svg("PCA_rlog_dds.svg")
-dev.off()
+# png("PCA_rlog_DDS.png")
+# svg("PCA_rlog_dds.svg")
+# dev.off()
 
+# DESeq2 tutorial 
 vsd <- vst(dds, blind=FALSE)
 pcaData <- plotPCA(vsd, intgroup=c("condition"), returnData=TRUE)
 plotPCA(vsd, intgroup="condition")
@@ -116,34 +117,52 @@ dds <- DESeq(dds)
 res <- results(dds)
 which(res$padj < 0.05)
 
-# extract a results from DESEQ
-res_1 <- as_tibble(results(dds,contrast=c("condition", "Degraded", "Undegraded")), rownames = "geneID") %>%
-  dplyr::rename(LFC = 3) %>%
+# AS: make a p-value histogram 
+contrast_tibble <- res %>% 
+  as_tibble(rownames = "geneID") %>% 
+  dplyr::rename(LFC = 3) %>% 
   na.omit()
+contrast_tibble %>% ggplot(aes(x = pvalue)) + geom_histogram()
+
+# adjust p-values 
+contrast_tibble$padj <- p.adjust(contrast_tibble$pvalue, method = "fdr")
+
+# plot a histogram of adjusted p-values 
+contrast_tibble %>% ggplot(aes(x = padj)) + geom_histogram()
+
+# check number of differentially-expressed genes 
+contrast_tibble %>% filter(padj < 0.05) %>% filter(abs(LFC) > 1) %>% dplyr::select(geneName)
+clipr::write_clip(sigGenes)
+
+
+# extract a results from DESEQ
+# res_1 <- as_tibble(results(dds), rownames = "geneID") %>%
+#  dplyr::rename(LFC = 3) %>%
+#  na.omit()
 
 # use biomart to add geneIDs to output
-library(biomaRt)
-library("AnnotationDbi")
-library("org.Hs.eg.db")
-columns(org.Hs.eg.db)
+ #library(biomaRt)
+#library("AnnotationDbi")
+#library("org.Hs.eg.db")
+#columns(org.Hs.eg.db)
 
 
 # add geneIDs to contrast
-ens <- res_1$geneID
-symbols <- mapIds(org.Hs.eg.db, keys = ens,
-                  column = c('SYMBOL'), keytype = 'ENSEMBL')
-symbols <- symbols[!is.na(symbols)]
-symbols <- symbols[match(res_1$geneID, names(symbols))]
-res_1$geneName <- symbols
-res_1 <- res_1 %>% relocate(geneName, .after = "geneID")
-write_tsv(res_1, "2022-05-01_DEG_vs_NONDEG.txt.gz")
+#ens <- res_1$geneID
+#symbols <- mapIds(org.Hs.eg.db, keys = ens,
+#                  column = c('SYMBOL'), keytype = 'ENSEMBL')
+#symbols <- symbols[!is.na(symbols)]
+#symbols <- symbols[match(res_1$geneID, names(symbols))]
+#res_1$geneName <- symbols
+#res_1 <- res_1 %>% relocate(geneName, .after = "geneID")
+#write_tsv(res_1, "2022-05-01_DEG_vs_NONDEG.txt.gz")
 
 library(EnhancedVolcano)
-EnhancedVolcano(res_1,
-                lab = res_1$geneName,
+EnhancedVolcano(contrast_tibble,
+                lab = contrast_tibble$geneID,
                 x = "LFC",
                 y = "padj",
-                title = 'DEG between Degraded vs Undegraded',
+                title = 'DEG between degraded vs undegraded',
                 ylim = c(0, -log10(10e-12)),
                 xlab = bquote(~Log[2]~ 'fold change'),
                 pCutoff = 0.05,
