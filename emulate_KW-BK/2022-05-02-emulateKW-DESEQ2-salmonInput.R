@@ -9,7 +9,7 @@
 salmon_output <- ("~/localGadiData/2022-05-05_KW-Salmon-DTU") # AJ's iMac
 
 # also provide the human annotation in GTF format 
-human_annotation <- "~/localGadiData/2022-05-05_KW-Salmon-DTU/Homo_sapiens_transcriptsOnly_GRCh38.104.chr.gtf"
+human_annotation <- "~/localGadiData/2022-05-05_KW-Salmon-DTU/Homo_sapiens.GRCh38.104.chr.gtf"
 
 # AS: I filtered the annotation for 'transcript' categories before downloading it to save space on my Mac 
 # The filtering command I used is: 
@@ -73,7 +73,7 @@ library(rtracklayer)
 tx_gene_map <- rtracklayer::import(human_annotation) %>% 
   as_tibble() %>% # AS: Convert to tibble format as soon as possible 
   dplyr::select(transcript_id, transcript_version, transcript_biotype, gene_name, gene_id) %>% 
-  unite(col = "transcript", c(transcript_id, transcript_version), sep = ".") %>% 
+  unite(col = "transcript", c(transcript_id, transcript_version), sep = ".") %>% # AS: split transcript version and transcript ID 
   dplyr::rename(gene = gene_name) %>% 
   dplyr::select(transcript, gene) %>% 
   na.omit() %>% 
