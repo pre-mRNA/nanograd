@@ -23,7 +23,7 @@ mkdir ${analysis}/all_alignments/
 # run minimap2
 
 conda activate ultra
-module load R
+module load R samtools
 
 export genome="/g/data/xc17/degradation_project/Reference/GRCh38_codingPlusNoncoding_noPsuedo.fa"
 export annotation="/g/data/xc17/bk9031/genomes/human_genome/Homo_sapiens.GRCh38.104.chr.gtf"
@@ -40,6 +40,6 @@ for i in ${allReads}/*; do
    sample=$(basename $i .fastq)
    echo "$(date) .... starting aligning for ${sample}"
    #minimap2 -ax map-ont -k14 "${genome}" "${i}" -a -t 48 | samtools view -@ 48 -b > ${allAlign}/${sample}.bam ||  die "$(date) .... failed to align for ${sample}"
-   samtools view -b -F 2308 -u -@ 48 ${allAlign}/${sample}.bam | samtools sort -@ 48 -m 4G  -l 9 > ${priAlign}/${sample}_primary.bam && samtools index ${priAlign}/${sample}_primary.bam & 
+   samtools view -b -F 2308 -u -@ 48 ${allAlign}/${sample}.bam | samtools sort -@ 48 -m 4G  -l 9 > ${priAlign}/${sample}_primary.bam && samtools index ${priAlign}/${sample}_primary.bam &
    echo "$(date) .... finished aligning for ${sample}"
- done
+ done; wait && echo "done aliging for all"
