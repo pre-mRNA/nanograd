@@ -15,7 +15,7 @@ mkdir $wd
 cd $wd
 
 # run featurecounts
-featureCounts --primary -L -T 56 -s 1 -a ${annotation} -o ${wd}/featureCounts_primary.txt `ls /g/data/xc17/bk9031/2022_nanograd_bk/analysis/2021_HEK293-degradation-first4-AR/primaryAlignments/*.bam`
+featureCounts --primary -L -T 56 -s 1 --extraAttributes "gene_biotype, gene_name" -a ${annotation} -o ${wd}/featureCounts_primary.txt `ls /g/data/xc17/bk9031/2022_nanograd_bk/analysis/2021_HEK293-degradation-first4-AR/primaryAlignments/*.bam`
 
 # zip results
 cat ${wd}/featureCounts_primary.txt | gzip -c > ${wd}/2022-05-12_degradation-first4-featureCounts_primary.txt.gz
