@@ -15,8 +15,6 @@
 # testing for nikolay's rDNA datasets
 # rm -rf "/g/data/lf10/as7425/2020-11-05_feloniusGru/analysis/2021-04-07_HEK293-supercrosslink-Shirokikh-map-to-rRNA/nanograd_out" 2>/dev/null; module load clairo; module load R; module load java; time bash /home/150/as7425/nanograd/nanograd_v2/nanograd.sh decay -a "/g/data/lf10/as7425/genomes/human_genome/rDNA_reference_U13369.1" -b "/g/data/lf10/as7425/2020-11-05_feloniusGru/analysis/2021-04-07_HEK293-supercrosslink-Shirokikh-map-to-rRNA/NX.primary.sorted.bam" -o "/g/data/lf10/as7425/2020-11-05_feloniusGru/analysis/2021-04-07_HEK293-supercrosslink-Shirokikh-map-to-rRNA/nanograd_out" -t "48"
 
-
-
 # submit with
 
 # -a /path/to/folder/with/annotations (i.e. fasta + gtf)

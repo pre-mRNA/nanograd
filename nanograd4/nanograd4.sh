@@ -76,4 +76,4 @@ samtools view -F 256 ${bam} | cut -f1,3,6,10 > ${out}.temp || die "cannot proces
 
 ssec "Running RScript"
 Rscript ${SCRIPTPATH}/scripts/process_bam.R "${anno}" "${out}.temp" "${out}" || die "cannot process reads"
-rm ${out}.temp
+# rm ${out}.temp
