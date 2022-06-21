@@ -21,6 +21,10 @@ b <- read_delim("/Users/AJlocal/Documents/Gadi/toLocal/ss2.txt", col_names = F, 
 
 merged <- bind_rows(a, b)
 
+##############################
+
+# example plot 
+
 # plot 
 ggplot(merged, aes(x = state, y = percent, fill = sample)) + 
   geom_bar(position="dodge", stat='identity') + 
@@ -28,3 +32,5 @@ ggplot(merged, aes(x = state, y = percent, fill = sample)) +
   ggtitle(str_wrap("Read end classifications in sample A and B", 60)) +
   xlab("Minknow read end classifications") + 
   ylab("Percentage of reads") 
+
+##############################
