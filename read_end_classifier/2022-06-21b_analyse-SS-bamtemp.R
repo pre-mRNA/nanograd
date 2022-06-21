@@ -12,6 +12,9 @@ data_path <- "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-
 # import data 
 input <- read_tsv(data_path, col_names = T, col_types = "ffddfddfffddf")
 
+# save data as unzipped text file 
+write_tsv(input, "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt", col_names = T)
+
 #################################################
 
 # make a histogram of read duration 
