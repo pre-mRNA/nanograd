@@ -44,3 +44,14 @@ samtools view ${bam} | wc -l # count reads
 export nanograd4="/home/150/as7425/nanograd/nanograd4/nanograd4.sh"
 export annotation="/g/data/lf10/as7425/genomes/human_genome/Homo_sapiens_transcriptsOnly_GRCh38.104.chr.gtf" # transcripts only
 time bash ${nanograd4} ${bam} ${annotation} ${wd}/${name}_nanograd4_out.txt
+
+# for benchmarking, sample 60% of reads from wt_rep1 and run nanograd on that in a temporary directory
+export wd="/g/data/lf10/as7425/nanograd/analysis/2022-06-22_benchmark-nanograd4-runtime/"
+mkdir ${wd}
+export full_bam="/g/data/xc17/degradation_project/Mg_degraded/basecalled/undegraded_hek293_pass1/all.undegraded_hek293_pass1.fastq.gz.sorted.bam"
+samtools view -@ 48 -b -s 0.8 ${full_bam} > ${wd}/wt_rep1_80percent.bam
+export bam="${wd}/wt_rep1_80percent.bam"
+samtools view -@ 48 ${bam} | wc -l # count reads
+export nanograd4="/home/150/as7425/nanograd/nanograd4/nanograd4.sh"
+export annotation="/g/data/lf10/as7425/genomes/human_genome/Homo_sapiens_transcriptsOnly_GRCh38.104.chr.gtf" # transcripts only
+time bash ${nanograd4} ${bam} ${annotation} ${wd}/wt_rep1_80percent_nanograd4_out.txt
