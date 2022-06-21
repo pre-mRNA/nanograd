@@ -7,11 +7,12 @@
 
 library(tidyverse)
 
-data_path <- "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt.gz"
+data_path <- "~/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt.gz"
 
 # import data 
-input <- read_tsv(data_path, col_names = T, col_types = "ffddfddfffddf")
-
+input <- read_tsv(data_path, col_names = T, col_types = "ffddfddfffddf") %>% 
+  mutate(condition = factor(condition, levels = c("wt_rep1", "wt_rep2", "deg_rep1", "deg_rep2")))
+  
 # save data as unzipped text file 
 # write_tsv(input, "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt", col_names = T)
 
@@ -120,7 +121,44 @@ ggplot(tx_cond_reason, aes(x = tx_total_count, fill = condition)) +
   scale_x_log10() + 
   scale_y_log10()
 
-tx_cond_reason 
+tx_cond_reason
+
+#################################################
+
+# explore HMGN2
+hmg_data <- input %>% filter(condition == "wt_rep1") %>% filter(transcript_id == "ENST00000361427") %>% 
+  mutate(translocation_rate = duration / map_len)
+
+ggplot(hmg_data, aes(x = seq_len, y = map_len, color = translocation_rate)) + 
+  geom_point()
+
+ggplot(input %>% filter(transcript_id == "ENST00000361427"), aes(x = map_len, color = condition)) + stat_ecdf()
+
+ggplot(input %>% filter(transcript_id == "ENST00000361427") %>% mutate(df = map_len/(1940-670)), aes(x = df, color = condition)) + 
+  stat_ecdf() + 
+  theme_bw() +
+  theme(text = element_text(size=16)) + 
+  ggtitle(str_wrap("HMGN2 per-read integrity numbers", 60)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  xlab("Read-specific integrity numbers") + 
+  ylab("Fraction of data") + 
+  coord_cartesian(ylim = c(0,1), xlim=c(0,1))
+
+# make a plot of end_reason 
+dev.new(noRStudioGD = TRUE)
+
+# plot to a device 
+ggplot(input %>% filter(end_reason != "mux_change"), aes(x = df, color = end_reason)) + 
+  stat_ecdf() + 
+  theme_bw() +
+  theme(text = element_text(size=16)) + 
+  ggtitle(str_wrap("Overall read integrity numbers", 60)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  xlab("Read-specific integrity numbers") + 
+  ylab("Fraction of data") + 
+  coord_cartesian(ylim = c(0,1), xlim = c(0,1)) + 
+  facet_wrap(~condition, nrow = 2)
+
 #################################################
 
 # old code 
