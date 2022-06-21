@@ -25,6 +25,6 @@ merged <- bind_rows(a, b)
 ggplot(merged, aes(x = state, y = percent, fill = sample)) + 
   geom_bar(position="dodge", stat='identity') + 
   theme_light() + 
-  ggtitle(str_wrap("Read end classifications in sample A and B", 40)) +
+  ggtitle(str_wrap("Read end classifications in sample A and B", 60)) +
   xlab("Minknow read end classifications") + 
   ylab("Percentage of reads") 
