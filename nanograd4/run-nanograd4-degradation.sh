@@ -34,6 +34,10 @@ for i in $(find $data -name "*bam" ); do runNano $i; done; wait && echo "done fo
 export data="/g/data/xc17/degradation_project/Mg_degraded/basecalled/"
 for i in $(find $data -name "*bam" ); do printf "$i\t$(samtools view $i | wc -l)\n"; done; wait && echo "done for all"
 
+# for benchmarking, count basecalled reads in library
+export data="/g/data/xc17/degradation_project/Mg_degraded/basecalled/"
+for i in $(find $data -name "all.*fastq.gz" ); do printf "$i\t$(zcat $i | wc -l)\n"; done; wait && echo "done for all"
+
 # for benchmarking, sample 60% of reads from wt_rep1 and run nanograd on that in a temporary directory
 export wd="/g/data/lf10/as7425/nanograd/analysis"
 mkdir ${wd}
