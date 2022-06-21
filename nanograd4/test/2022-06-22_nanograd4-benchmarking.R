@@ -20,14 +20,17 @@ scientific_10 <- function(x) {
   gsub("e", " x 10^", scientific_format()(x))
 }
 
+dev.new(noRStudioGD = TRUE)
+
 ggplot(run_time, aes(x = Reads, y = Run_time)) + 
   geom_point() +   
   theme_bw() +
   theme(text = element_text(size=16)) + 
-  ggtitle(str_wrap("Nanograd runtime on a laptop for human transcriptomes", 60)) + 
+  # ggtitle(str_wrap("Nanograd runtime on a laptop for human transcriptomes", 60)) + 
   theme(plot.title = element_text(hjust=0.5)) + 
   xlab("Number of reads in library") + 
   ylab("Runtime (seconds)") + 
   geom_smooth(method = "lm") + 
-  scale_x_log10()
+  scale_x_log10() + 
+  coord_cartesian(ylim=c(0, 800))
 
