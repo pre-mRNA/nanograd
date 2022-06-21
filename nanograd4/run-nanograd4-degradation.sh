@@ -27,4 +27,4 @@ function runNano(){
 module load R
 
 # find bams in data
-for i in $(find $data -name "*bam" ); do runNano $i & done; wait && echo "done for all"
+for i in $(find $data -name "*bam" ); do runNano $i; done; wait && echo "done for all"
