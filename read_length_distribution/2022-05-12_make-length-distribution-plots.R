@@ -105,7 +105,7 @@ g <- ggplot(eando %>% filter(), aes(x = read_len)) +
         legend.spacing.y = unit(0.15, 'cm'), 
         legend.position=c(0.62,0.6), 
         legend.background=element_blank()) + 
-  scale_colour_manual(values = c("#7474E8", "#9E3954", "#ADA81D"))
+  scale_colour_manual(values = c("#7474E8", "#9E3954", "#ADA81D")) # correspond to the level of factor 
 
 # save
 ggsave("~/Desktop/2022-05-12_read-length-distribution.png", plot = g, scale = 1, width = 4.5, height = 4.5, unit = "in", dpi = 300, bg = NULL)
