@@ -13,7 +13,7 @@ data_path <- "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-
 input <- read_tsv(data_path, col_names = T, col_types = "ffddfddfffddf")
 
 # save data as unzipped text file 
-write_tsv(input, "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt", col_names = T)
+# write_tsv(input, "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt", col_names = T)
 
 #################################################
 
@@ -38,11 +38,10 @@ cond_end <- input %>%
 ggplot(cond_end, aes(x = group, y = median_duration)) + geom_point()
 
 # compare start time to sequencing duration between the 4 conditions 
-ggplot(input %>% slice_sample(n = 10000), aes(x = start_time, y = duration, color = condition)) + 
+dev.new(noRStudioGD = TRUE)
+ggplot(input %>% slice_sample(n = 100000), aes(x = start_time, y = duration, color = condition)) + 
   geom_point() + 
-  facet_wrap(~condition, nrow = 2) + 
-  ylim(0,10)
-
+  facet_wrap(~condition, nrow = 2) 
 #################################################
 
 # use group_by and summarise() to look at transcript and condition-specific enrichment of read_end reason 
@@ -69,6 +68,13 @@ tx_cond_reason <- input %>%
 # get the ratio of unblock to signal_positive for every transcript in tx_cond_reason
 unblock_tibble <- tx_cond_reason %>% 
   mutate(unblock_to_positive = unblock_mux_change / signal_positive)
+
+# select wt_rep1 
+wt_rep1_unblock <- unblock_tibble %>% filter(condition == "wt_rep1")
+
+# 
+ggplot(wt_rep1_unblock, aes(x = tx_total_count, y = unblock_to_positive)) + 
+  geom_point()
 
 ##################################################
 ##################################################
