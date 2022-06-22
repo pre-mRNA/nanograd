@@ -21,7 +21,7 @@ export R_LIBS=/g/data/lf10/as7425/apps/Rlibs
 module load R
 
 # link the annotation
-export anno="/g/data/lf10/as7425/genomes/human_genome/Homo_sapiens_transcriptsOnly_GRCh38.104.chr.gtf"
+export anno="/g/data/lf10/as7425/genomes/human_genome/Homo_sapiens.GRCh38.104.chr.gtf"
 
 # call the Rscript for each of our data
 Rscript "${script}" "${anno}" "${deg_1}" "${deg_1_ss}" "deg_rep1" ${wd}/deg_rep1.txt || echo "failed for deg1" &
@@ -32,4 +32,4 @@ wait && echo "done for all"
 
 
 # merge the data keeping only one copy of the header
-cat ${wd}/deg_rep1.txt <(cat ${wd}/deg_rep2.txt | tail -n +2) <(cat ${wd}/wt_rep1.txt | tail -n +2) <(cat ${wd}/wt_rep2.txt | tail -n +2) | gzip -c > ${wd}/all_degradation_combined.txt.gz 
+cat ${wd}/deg_rep1.txt <(cat ${wd}/deg_rep2.txt | tail -n +2) <(cat ${wd}/wt_rep1.txt | tail -n +2) <(cat ${wd}/wt_rep2.txt | tail -n +2) | gzip -c > ${wd}/all_degradation_combined.txt.gz
