@@ -134,6 +134,10 @@ ggplot(hmg_data, aes(x = seq_len, y = map_len, color = translocation_rate)) +
 
 ggplot(input %>% filter(transcript_id == "ENST00000361427"), aes(x = map_len, color = condition)) + stat_ecdf()
 
+# calculate transcript integrity factors 
+input %>% filter(transcript_id == "ENST00000361427") %>% mutate(df = map_len/(1940-670)) %>% group_by(condition) %>% summarise(df = median(df))
+
+
 ggplot(input %>% filter(transcript_id == "ENST00000361427") %>% mutate(df = map_len/(1940-670)), aes(x = df, color = condition)) + 
   stat_ecdf() + 
   theme_bw() +
@@ -161,28 +165,19 @@ ggplot(input %>% filter(end_reason != "mux_change"), aes(x = df, color = end_rea
 
 #################################################
 
-# old code 
+# plot transcript integrity factor for all libraries
+input %>% group_by(condition, transcript_id) %>% 
+  summarise(df = median(df), count = n()) %>% 
+  ggplot(., aes(x = df, color = condition)) +
+  stat_ecdf() + 
+  theme_bw() +
+  theme(text = element_text(size=16)) + 
+  ggtitle(str_wrap("Transcriptome-wide integrity factors", 60)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  xlab("Transcript-specific integrity factors") + 
+  ylab("Fraction of transcripts") + 
+  coord_cartesian(ylim = c(0,1), xlim = c(0,1))
 
-# prepare to plot
-dev.new(width=8.5, height=4.5, unit="in")
 
-# plot expected and observed read lengths
-g <- ggplot(eando %>% filter(), aes(x = read_len)) +
-  geom_density(adjust = 3, aes(color = type), size = 0.7) +
-  xlim(0,10000) +
-  theme_light() +
-  ggtitle(str_wrap("Expected and observed alignment lengths in HEK293 poly(A)+ RNA", 40)) +
-  xlab("Alignment length (nt)") +
-  ylab("Density") +
-  theme(text = element_text(size = 14),
-        axis.text = element_text(size = 12),
-        plot.title= element_text(size = 16, hjust = 0.5),
-        legend.title = element_text(colour="black", size=0, face="bold"),
-        legend.spacing.x = unit(0.2, 'cm'),
-        legend.spacing.y = unit(0.15, 'cm'),
-        legend.position=c(0.62,0.6),
-        legend.background=element_blank()) +
-  scale_colour_manual(values = c("#7474E8", "#9E3954", "#ADA81D")) # correspond to the level of factor
 
-# save
-ggsave("~/Desktop/2022-05-12_read-length-distribution.png", plot = g, scale = 1, width = 8.5, height = 4.5, unit = "in", dpi = 300, bg = NULL)
+
