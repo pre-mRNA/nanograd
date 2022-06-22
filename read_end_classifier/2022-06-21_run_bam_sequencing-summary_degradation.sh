@@ -22,6 +22,7 @@ module load R
 
 # link the annotation
 export anno="/g/data/lf10/as7425/genomes/human_genome/Homo_sapiens.GRCh38.104.chr.gtf"
+# updated to use the full annotation rather than the transcript columns only ### 2022-06-22
 
 # call the Rscript for each of our data
 Rscript "${script}" "${anno}" "${deg_1}" "${deg_1_ss}" "deg_rep1" ${wd}/deg_rep1.txt || echo "failed for deg1" &
