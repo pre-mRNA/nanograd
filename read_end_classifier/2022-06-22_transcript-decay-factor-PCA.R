@@ -7,10 +7,11 @@
 
 library(tidyverse)
 
-data_path <- "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt.gz"
+data_path <- "~/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt.gz"
 
 # import data 
-input <- read_tsv(data_path, col_names = T, col_types = "ffddfddfffddf")
+input <- read_tsv(data_path, col_names = T, col_types = "ffddfddfffddf") %>% 
+  mutate(condition = factor(condition, levels = c("wt_rep1", "wt_rep2", "deg_rep1", "deg_rep2")))
 
 # prepare data for PCA 
 pca_data_all <- input %>% 
@@ -23,6 +24,15 @@ pca_data_all <- input %>%
   select(-read_count) %>% 
   pivot_wider(names_from = condition, values_from = dfmedian) %>% 
   replace(is.na(.), 0)
+
+# make correlation plots 
+library(corrplot)
+
+pca_data_all %>% filter(tx_count > 150) %>% select(-transcript_id, -tx_count) %>% cor(., method = "pearson") %>% 
+  corrplot(., method = "pie", type = "upper", order = "hclust", tl.col = "black", tl.srt = 45, col.lim = c(0,1), diag = T)
+
+# look at this data 
+head(pca_data_all)
 
 rm(input)
 

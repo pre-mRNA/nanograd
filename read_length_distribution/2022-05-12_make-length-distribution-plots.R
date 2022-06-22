@@ -108,6 +108,29 @@ g <- ggplot(eando %>% filter(), aes(x = read_len)) +
   scale_colour_manual(values = c("#7474E8", "#9E3954", "#ADA81D")) # correspond to the level of factor 
 
 # save
-ggsave("~/Desktop/2022-05-12_read-length-distribution.png", plot = g, scale = 1, width = 8.5, height = 4.5, unit = "in", dpi = 300, bg = NULL)
+ggsave("~/Desktop/2022-05-12_read-length-distribution.png", plot = g, scale = 1, width = 4.5, height = 4.5, unit = "in", dpi = 300, bg = NULL)
+
+eando2 <- eando %>% filter() %>% mutate(xlab = str_wrap(eando$type, width = 12))
+
+g1 <- ggplot(eando2, aes(x = xlab, y = read_len)) + 
+  geom_boxplot(aes(fill = type)) + 
+  theme_light() + 
+  ylim(0,5000) + 
+  ggtitle(str_wrap("Alignment lengths in HEK293 poly(A)+ RNA", 40)) +
+  ylab("Length (nt)") + 
+  xlab("sample") + 
+  theme(text = element_text(size = 14), 
+        axis.text = element_text(size = 12), 
+        plot.title= element_text(size = 16, hjust = 0.5), 
+        legend.title = element_text(colour="black", size=0, face="bold"),
+        legend.spacing.x = unit(0.2, 'cm'), 
+        legend.spacing.y = unit(0.15, 'cm'), 
+        legend.background=element_blank()) + 
+  scale_colour_manual(values = c("#7474E8", "#9E3954", "#ADA81D"))
+
+g1
+
+# save
+ggsave("~/Desktop/2022-05-12_histogram.png", plot = g1, scale = 1, width = 4.5, height = 4.5, unit = "in", dpi = 300, bg = NULL)
 
 

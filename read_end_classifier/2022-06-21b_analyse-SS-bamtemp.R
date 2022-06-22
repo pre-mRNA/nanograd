@@ -7,11 +7,12 @@
 
 library(tidyverse)
 
-data_path <- "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt.gz"
+data_path <- "~/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt.gz"
 
 # import data 
-input <- read_tsv(data_path, col_names = T, col_types = "ffddfddfffddf")
-
+input <- read_tsv(data_path, col_names = T, col_types = "ffddfddfffddf") %>% 
+  mutate(condition = factor(condition, levels = c("wt_rep1", "wt_rep2", "deg_rep1", "deg_rep2")))
+  
 # save data as unzipped text file 
 # write_tsv(input, "/Users/AJlocal/localGadiData/2022-06-21_degradation-all-data/2022-06-21_all_degradation_combined.txt", col_names = T)
 
@@ -120,31 +121,63 @@ ggplot(tx_cond_reason, aes(x = tx_total_count, fill = condition)) +
   scale_x_log10() + 
   scale_y_log10()
 
-tx_cond_reason 
+tx_cond_reason
+
 #################################################
 
-# old code 
+# explore HMGN2
+hmg_data <- input %>% filter(condition == "wt_rep1") %>% filter(transcript_id == "ENST00000361427") %>% 
+  mutate(translocation_rate = duration / map_len)
 
-# prepare to plot
-dev.new(width=8.5, height=4.5, unit="in")
+ggplot(hmg_data, aes(x = seq_len, y = map_len, color = translocation_rate)) + 
+  geom_point()
 
-# plot expected and observed read lengths
-g <- ggplot(eando %>% filter(), aes(x = read_len)) +
-  geom_density(adjust = 3, aes(color = type), size = 0.7) +
-  xlim(0,10000) +
-  theme_light() +
-  ggtitle(str_wrap("Expected and observed alignment lengths in HEK293 poly(A)+ RNA", 40)) +
-  xlab("Alignment length (nt)") +
-  ylab("Density") +
-  theme(text = element_text(size = 14),
-        axis.text = element_text(size = 12),
-        plot.title= element_text(size = 16, hjust = 0.5),
-        legend.title = element_text(colour="black", size=0, face="bold"),
-        legend.spacing.x = unit(0.2, 'cm'),
-        legend.spacing.y = unit(0.15, 'cm'),
-        legend.position=c(0.62,0.6),
-        legend.background=element_blank()) +
-  scale_colour_manual(values = c("#7474E8", "#9E3954", "#ADA81D")) # correspond to the level of factor
+ggplot(input %>% filter(transcript_id == "ENST00000361427"), aes(x = map_len, color = condition)) + stat_ecdf()
 
-# save
-ggsave("~/Desktop/2022-05-12_read-length-distribution.png", plot = g, scale = 1, width = 8.5, height = 4.5, unit = "in", dpi = 300, bg = NULL)
+# calculate transcript integrity factors 
+input %>% filter(transcript_id == "ENST00000361427") %>% mutate(df = map_len/(1940-670)) %>% group_by(condition) %>% summarise(df = median(df))
+
+
+ggplot(input %>% filter(transcript_id == "ENST00000361427") %>% mutate(df = map_len/(1940-670)), aes(x = df, color = condition)) + 
+  stat_ecdf() + 
+  theme_bw() +
+  theme(text = element_text(size=16)) + 
+  ggtitle(str_wrap("HMGN2 per-read integrity numbers", 60)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  xlab("Read-specific integrity numbers") + 
+  ylab("Fraction of data") + 
+  coord_cartesian(ylim = c(0,1), xlim=c(0,1))
+
+# make a plot of end_reason 
+dev.new(noRStudioGD = TRUE)
+
+# plot to a device 
+ggplot(input %>% filter(end_reason != "mux_change"), aes(x = df, color = end_reason)) + 
+  stat_ecdf() + 
+  theme_bw() +
+  theme(text = element_text(size=16)) + 
+  ggtitle(str_wrap("Overall read integrity numbers", 60)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  xlab("Read-specific integrity numbers") + 
+  ylab("Fraction of data") + 
+  coord_cartesian(ylim = c(0,1), xlim = c(0,1)) + 
+  facet_wrap(~condition, nrow = 2)
+
+#################################################
+
+# plot transcript integrity factor for all libraries
+input %>% group_by(condition, transcript_id) %>% 
+  summarise(df = median(df), count = n()) %>% 
+  ggplot(., aes(x = df, color = condition)) +
+  stat_ecdf() + 
+  theme_bw() +
+  theme(text = element_text(size=16)) + 
+  ggtitle(str_wrap("Transcriptome-wide integrity factors", 60)) + 
+  theme(plot.title = element_text(hjust=0.5)) + 
+  xlab("Transcript-specific integrity factors") + 
+  ylab("Fraction of transcripts") + 
+  coord_cartesian(ylim = c(0,1), xlim = c(0,1))
+
+
+
+
