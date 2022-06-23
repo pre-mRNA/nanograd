@@ -17,8 +17,8 @@ export seq_data="/g/data/lf10/as7425/nanograd/data/2022-06-23_hek293-nanograd4-a
 export wd="/g/data/lf10/as7425/nanograd/analysis/2022-06-23_hek293-nanograd4-analysis"; mkdir -p ${wd}
 
 # set up directories for all alignments and primary alignments
-export all_align="${wd}/all_alignments"; mkdir -p ${all_align}
-export primary_align="${wd}/primary_alignments"; mkdir -p ${primary_align}
+export all_align="${wd}/all_transcriptome_alignments"; mkdir -p ${all_align}
+export primary_align="${wd}/primary_transcriptome_alignments"; mkdir -p ${primary_align}
 
 # set up reference for alignment
 export genome="/g/data/lf10/as7425/genomes/human_genome/transcriptome/GRCh38_codingPlusNoncoding_noPsuedo.fa"
