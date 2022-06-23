@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# WARNING: Script is still being debugged
+
 # written by Aditya Sethi on 2022-06-23
 # aim: Align all hek293 data to the human genome using uLTRA
 
