@@ -34,7 +34,10 @@ anno_data <- anno_data %>%
 filt_anno_data <- subset(anno_data, !(sample %in% c("hassan_SRR13261194", "hassan_SRR13261196")))
 
 # plot histograms of DF 
-ggplot(filt_anno_data, aes(x = df_ratio, fill = study)) + geom_histogram() + xlim(0,1) + facet_wrap(~sample, nrow = 3)
+ggplot(filt_anno_data, aes(x = df_ratio, fill = study)) + geom_density() + xlim(0,1) + facet_wrap(~sample, nrow = 3) + 
+  xlab("Transcript Integrity Factor distribution") + 
+  ggtitle("Transcript Integrity Factor distributions in HEK293 poly(A) sequencing")
+  
 
 # filter for transcripts observed in this study
 tx_this_study <- filt_anno_data %>% filter(study == "This_study")
