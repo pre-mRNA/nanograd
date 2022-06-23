@@ -17,6 +17,7 @@ export annotation="/g/data/lf10/as7425/genomes/human_genome/Homo_sapiens.GRCh38.
 # configure environment
 module load R samtools
 export R_LIBS=/g/data/lf10/as7425/apps/Rlibs
+export TIMEFORMAT=%R # to print the time in seconds
 
 ##################################################
 
@@ -34,7 +35,7 @@ function runNano(){
 
   # run nanograd
   time bash "${nanograd4}" "${primary_alignment}" "${annotation}" "${nanograd_out}/${sample_name}_nanograd4_out.txt" || echo "nanograd4 failed for ${sample_name}"
-  echo "$(date) ... done for ${name}"
+  echo "$(date) ... done for ${sample_name}"
 
 }; export -f runNano
 
