@@ -8,7 +8,7 @@
 
 # paths
 export genome="/g/data/xc17/degradation_project/Reference/GRCh38_codingPlusNoncoding_noPsuedo.fa"
-export analysis="/g/data/lf10/as7425/nanograd/analysis/literature_metaplots"
+export analysis="/g/data/lf10/as7425/nanograd/analysis/2022-05-11_literature_metaplots"
 export priAlign="${analysis}/primary_alignments"; mkdir -p ${priAlign}
 export metaInput="${analysis}/metaplot_input"; mkdir -p ${metaInput}
 

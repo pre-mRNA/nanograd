@@ -14,7 +14,7 @@
 ############################################################
 
 # make a data directory
-export data="/g/data/lf10/as7425/nanograd/data/metaplot_data"; mkdir -p ${data} 2>/dev/null
+export data="/g/data/lf10/as7425/nanograd/data/2022-05-11_metaplot_data"; mkdir -p ${data} 2>/dev/null
 
 # get NA12878 direct RNA fastq data
 wget https://s3.amazonaws.com/nanopore-human-wgs/rna/fastq/NA12878-DirectRNA_All_Guppy_4.2.2.fastq.gz

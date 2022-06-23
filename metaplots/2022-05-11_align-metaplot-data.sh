@@ -9,10 +9,10 @@
 # preprocessing
 
 # data is in /g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-first4-AR
-export data="/g/data/lf10/as7425/nanograd/data/metaplot_data"
+export data="/g/data/lf10/as7425/nanograd/data/2022-05-11_metaplot_data"
 
 # make an output directory
-export analysis="/g/data/lf10/as7425/nanograd/analysis/metaplot_data"
+export analysis="/g/data/lf10/as7425/nanograd/analysis/2022-05-11_metaplot_data"
 mkdir -p ${analysis} 2>/dev/null
 
 # make a folder for mapping output
@@ -27,8 +27,8 @@ module load R samtools
 
 export genome="/g/data/xc17/degradation_project/Reference/GRCh38_codingPlusNoncoding_noPsuedo.fa"
 export annotation="/g/data/xc17/bk9031/genomes/human_genome/Homo_sapiens.GRCh38.104.chr.gtf"
-export allReads="/g/data/lf10/as7425/nanograd/data/metaplot_data"
-export analysis="/g/data/lf10/as7425/nanograd/analysis/literature_metaplots"
+export allReads="/g/data/lf10/as7425/nanograd/data/2022-05-11_metaplot_data"
+export analysis="/g/data/lf10/as7425/nanograd/analysis/2022-05-11_literature_metaplots"
 export allAlign="${analysis}/all_alignments"; mkdir -p ${allAlign}
 export priAlign="${analysis}/primary_alignments"; mkdir -p ${priAlign}
 
