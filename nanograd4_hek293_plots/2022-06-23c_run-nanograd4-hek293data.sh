@@ -39,4 +39,6 @@ function runNano(){
 
 }; export -f runNano
 
+# completed succefully 2022-06-23 AS on first try! 
+
 for i in ${primary_alignments}/*bam; do runNano "${i}" || echo "cannot run nanograd for ${i}" & done
