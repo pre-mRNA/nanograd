@@ -10,9 +10,11 @@ if (length(args)!=3) {
   stop("\nUsage: Rscript process_bam.R /path/to/bar.gtf /path/to/bamdata.txt /path/to/output.txt", call.=FALSE)
 }
 
+suppressPackageStartupMessages({
 library(tidyverse)
 library(GenomicFeatures)
 library(rtracklayer)
+})
 
 input <- read_tsv(args[2], col_names = F, col_types = "ffcc") %>%
   dplyr::rename(read = 1, tx = 2, seq = 4, cig = 3) %>%
