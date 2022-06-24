@@ -113,6 +113,43 @@ ggplot(data2, aes(x = PC1, y = PC2, color = Study)) +
                   box.padding = 1, 
                   size = 6, 
                   show.legend = F)  
+
+##################################################
+##################################################
+##################################################
+
+# plot TIF for hek293 data 
+this_study <- filt_anno_data %>% filter(study == "This_study") %>% 
+  mutate(sample = str_remove(sample, 'sethi_')) %>% 
+  mutate(condition = factor(condition, levels = c("Degraded", "WT")))
+
+# plot transcript integrity factors 
+ggplot(this_study, aes(x = df_ratio, fill = condition)) + 
+  geom_density() + 
+  facet_wrap(~sample, nrow = 2) + 
+  xlim(0,1) + 
+  ggtitle("HEK293 Transcript Integrity Factors") + 
+  xlab("Transcript Integrity Factor") + 
+  ylab("Density") + 
+  theme(text = element_text(size=16)) + 
+  theme(plot.title = element_text(hjust=0.5))
+
+a <- tibble(sample = c("wt_rep1", "wt_rep2", "deg_rep1", "deg_rep2"), 
+            condition = c("wt", "wt", "deg", "deg"),
+            DIN = c("11.8", "11.8", "8.24", "8.11")) %>% 
+  mutate(condition = factor(condition, levels = c("wt", "deg"))) %>% 
+  mutate(sample = factor(sample, levels = c("wt_rep1", "wt_rep2", "deg_rep1", "deg_rep2"))) %>% 
+  mutate(DIN = as.numeric(DIN))
+
+ggplot(a, aes(x = sample, y = DIN, fill= condition)) + geom_bar(stat='identity') + 
+  ggtitle("HEK293 Direct Integrity Numbers") + 
+  xlab("Sample") + 
+  ylab("Direct Integrity Number") + 
+  theme(text = element_text(size=16)) + 
+  theme(plot.title = element_text(hjust=0.5))            
+  
+
+
   
 
     
