@@ -145,10 +145,28 @@ ggplot(a, aes(x = sample, y = DIN, fill= condition)) + geom_bar(stat='identity')
   ggtitle("HEK293 Direct Integrity Numbers") + 
   xlab("Sample") + 
   ylab("Direct Integrity Number") + 
-  theme(text = element_text(size=16)) + 
+  theme(text = element_text(size=24)) + 
   theme(plot.title = element_text(hjust=0.5))            
   
 
+##############################
+
+a <- filt_anno_data %>% filter(transcript_id == "ENST00000376588") %>% arrange(desc(sample)) %>% 
+  select(sample, df_ratio)
+a
+
+##########
+
+a <- read_tsv("/Users/asethi/Documents/HEK293_DIN.txt", col_names = T, col_types = "fcd") %>% 
+  mutate_all(~replace(., is.na(.), 10.7)) %>% 
+  mutate(sample = "sample")
+
+ggplot(a, aes(y = Study, x = DIN, color = Study)) + geom_point(size = 3, alpha = 1) + 
+  ggtitle("HEK293 Direct Integrity Number distribution") + 
+  xlab("Sample DIN") + 
+  ylab("Study") + 
+  theme(text = element_text(size=16)) + 
+  theme(plot.title = element_text(hjust=0.5))  
 
   
 
