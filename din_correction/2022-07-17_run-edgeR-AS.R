@@ -66,24 +66,14 @@ final_length_key <- bind_rows(merged %>% select(gene_id, transcript_length), out
 counts <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% 
   select(gene_id, wt_rep1, wt_rep2, deg_rep1, deg_rep2)
 
+name_key <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% select(gene_id, gene_name)
+
 ####################################################################################################
 
-# set up edgeR test 
-
-
-
-# creating a list with samples and  gene_id and length
-y <- DGEList(counts=raw_counts[,8:11], genes=raw_counts("gene_id","Length"))
-
-# Normalizing the data
-y <- calcNormfactors(y)
-
-
-
-# convert the tibble to data frame 
-counts_matrix <- as.data.frame(counts)
+# convert to matrix 
+counts_import_matrix <- as.data.frame(counts)
 counts_matrix <- counts_import_matrix[,-1]
-row.names(counts_matrix) <- counts[,1]
+row.names(counts_matrix) <- counts_import_matrix[,1]
 
 # create list and calculate library sizes 
 group <- c("control","control","degraded", "degraded")
@@ -112,6 +102,70 @@ d2 <- estimateGLMTrendedDisp(d2,design.mat, method="auto")
 d2 <- estimateGLMTagwiseDisp(d2,design.mat)
 
 
+# do edgeR using GLM
+fit <- glmFit(d2,design.mat)
+
+# plot BCV 
+plotBCV(d2)
+
+# extract results
+lrt12_raw <- glmLRT(fit,contrast=c(1,-1))
+
+lrt12 <- glmLRT(fit,contrast=c(-1,1))[[14]] %>% 
+  as_tibble(rownames = "geneName")
+
+
+##############################################################################################################
+
+# note: Figure out how to filter for expression level, we need a better method 
+
+# add a filter for expression level 
+
+filt <- lrt12 %>% filter(logCPM > 2.75)
+
+ggplot(filt, aes(x = PValue)) + geom_histogram()
+
+####################################################################################################
+
+# add back gene names, where they exist 
+
+named <- inner_join(filt %>% rename(gene_id = geneName), name_key, by = "gene_id")
+named$p.adj <- p.adjust(named$PValue, method = "fdr")
+
+named %>% filter(p.adj < 0.1)
+
+##############################################################################################################
+
+# convert the output to data.table for enhanced volcano
+lrt12_dt <- as.data.frame(lrt12_names[,-1])
+names2 <- make.unique(lrt12_dt$geneName)
+rownames(lrt12_dt) <- names2
+
+library(EnhancedVolcano)
+
+EnhancedVolcano(named,
+                lab = named$gene_name,
+                x = "logFC",
+                y = "p.adj",
+                title = '',
+                xlab = bquote(~Log[2]~ 'fold change'),
+                pCutoff = 0.1,
+                pointSize = 2.0,
+                labSize = 4,
+                colAlpha = 0.5,
+                legendPosition = 'right',
+                legendLabSize = 12,
+                legendIconSize = 4.0,
+                drawConnectors = FALSE,
+                widthConnectors = 0.5, 
+                typeConnectors = "closed",
+                endsConnectors = "first",
+                lengthConnectors = unit(0.01, "npc"),
+                colConnectors = "grey10",
+                ylim = c(0,30),
+                xlim = c(-3,3))
+
+##############################################################################################################
 
 
 
