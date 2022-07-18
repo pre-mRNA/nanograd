@@ -9,7 +9,7 @@ library(tidyverse)
 # counts_file <- "C:/Users/User/Documents/ANU/Year 4/Semester 2/PhD/Nanograd/Featurecounts output/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
 
 # AJ's JCSMR iMac 
-# counts_file <- "/Users/AJlocal/localGadiData/2022-06-22_HEK293-degradation-first4-AR_liqa-genome-alignments_BK/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
+counts_file <- "/Users/AJlocal/localGadiData/2022-06-22_HEK293-degradation-first4-AR_liqa-genome-alignments_BK/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
 
 # import counts as a tibble 
 raw_counts <- read_tsv(counts_file, col_names = T, skip = 1, col_types = "fccccdfdddd") %>% 
@@ -53,32 +53,10 @@ gene_key <- raw_counts %>% select(gene_id, gene_name) %>% unique() %>% rename(ge
 # ane merge 
 results_annotated <- inner_join(gene_key, results_tibble, by = "geneID")
 
-# plot for KW 
-
-##########################################################################################
-##########################################################################################
-##########################################################################################
-
-# KW old code
-
-
-# first contrast, WT_E15 vs WT_E18, as WT15-18
-
-# put second condition first in the contrast such that upregulated genes are upregulated in the first condition 
-WT_KO <- as_tibble(results(dds,contrast=c("condition", "KO", "WT")), rownames = "geneID") %>% 
-  dplyr::rename(LFC = 3) %>% 
-  na.omit()
-
-##########################################################################################
-##########################################################################################
-##########################################################################################
-
-
-##ENhanced Volcano
-
+# start plotting 
 library(EnhancedVolcano)
-EnhancedVolcano(res,
-                lab = rownames(res),
+EnhancedVolcano(results_annotated,
+                lab = results_annotated$geneID,
                 x = "log2FoldChange",
                 y = "padj",
                 title = 'DEG between Decayed vs Non-decayed',
