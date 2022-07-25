@@ -159,7 +159,7 @@ iterate_cpm <- function(cutoff){
   
   
   total_genes <- nrow(a)
-  sig_genes <- nrow(a %>% filter(p.adj < 0.05 & abs(logFC) > 1))
+  sig_genes <- nrow(a %>% filter(p.adj < 0.1 & abs(logFC) > 1))
   specificity <- total_genes/(total_genes + sig_genes)
   # print(paste(total_genes, " total genes; ", sig_genes, " significant genes;", specificity, " specificity"))
   
