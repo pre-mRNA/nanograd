@@ -114,8 +114,11 @@ median_log2_cpm <- apply(cpm_log, 1, median)
   # define the groups for comparison 
   group <- c("control","control","degraded", "degraded")
   
+   din <- c(11.8, 11.8, 8.24, 8.11)
+  #din <- c(10, 10, 8, 8)
+  
   # design the experiment 
-  design <- model.matrix(~group)
+  design <- model.matrix(~group+din)
   design
   
   # make DGE object 
@@ -175,7 +178,8 @@ ggplot(iteration_loop_out, aes(x = total_genes, y = sig_genes, color = cutoff)) 
 # pick the cutoff 
 # 5.5cpm logCPM cutoff, 4721 genes,	61 DEG,	0.987244 specificity
 
-
+# new cutoff
+# 5.0 cpm prefilter,	6463 genes,	0 DEGs,	1.0000000 specificity 
 
 
 
