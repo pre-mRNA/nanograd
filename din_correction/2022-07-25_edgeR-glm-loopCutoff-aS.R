@@ -80,7 +80,8 @@ name_key <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% select(
 ####################################################################################################
 
 # convert raw counts to matrix format 
-
+testCutoff <- function(cutoff){
+  
 counts_import_matrix <- as.data.frame(counts)
 data_clean <- counts_import_matrix[,-1]
 row.names(data_clean) <- counts_import_matrix[,1]
@@ -98,14 +99,17 @@ median_log2_cpm <- apply(cpm_log, 1, median)
 
 # create loop for expression cutoff 
 
-testCutoff <- function(cutoff){
+
 
   # take the expression cutoff from the input 
-  expr_cutoff <- 5.5 #cutoff 
+  expr_cutoff <- cutoff
 
   # filter for genes where the median log2 expression is greater than the cutoff 
   data_clean <- data_clean[median_log2_cpm > expr_cutoff, ]
 
+  # print how many genes we still have in the analysis 
+  rows <- nrow(data_clean)
+  print(paste("you have ", rows, " genes remaining in the analysis"))
 
   # define the groups for comparison 
   group <- c("control","control","degraded", "degraded")
@@ -116,7 +120,6 @@ testCutoff <- function(cutoff){
   
   # make DGE object 
   y <- DGEList(counts=data_clean,group=factor(group))
-  y
 
   # normalize counts using edgeR 
   y <- calcNormFactors(y)
@@ -128,13 +131,8 @@ testCutoff <- function(cutoff){
   lrt <- glmLRT(fit, coef = 2)
   topTags(lrt)
 
-
-  # run the exact test 
-  et <- exactTest(y)
-  results_edgeR <- topTags(et, n = nrow(data_clean), sort.by = "none")
-
   # extract the differential expression data and convert it to a tibble and add gene names 
-  DEtib <- et[[1]] %>% 
+  DEtib <- lrt[[14]] %>% 
     as_tibble(rownames = "gene_id") %>% 
     dplyr::rename(p.raw = PValue) %>% 
     right_join(name_key, ., by = "gene_id")
