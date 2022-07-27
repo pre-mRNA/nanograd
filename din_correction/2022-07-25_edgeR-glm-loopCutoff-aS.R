@@ -39,6 +39,9 @@ raw_counts <- read_tsv(counts_file, col_names = T, skip = 1, col_types = "fccccd
   select(gene_id, gene_name, chr, wt_rep1, wt_rep2, deg_rep1, deg_rep2)
 
 
+# plot gene coverage histograms 
+# raw_counts %>% pivot_longer(cols = contains("_rep"), names_to = "library", values_to = "count") %>% ggplot(., aes(x = count, fill = library)) + geom_histogram() + facet_wrap(~library) + scale_x_log10() + scale_y_log10() + xlab("Count per gene") + ylab("Density")
+
 ####################################################################################################
 
 # use LIQA output to calculate the most likely isoform and transcript length for each gene 

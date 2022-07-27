@@ -215,4 +215,8 @@ ggplot(joined_DEgenes, aes(x = deltalogFC)) + stat_ecdf()
 ggplot(joined_DEgenes, aes(x = deltapadj)) + geom_histogram()
 ggplot(joined_DEgenes, aes(x = deltapadj)) + stat_ecdf()
 
-ggplot(joined_DEgenes, aes(x = deltalogFC, y = deltapadj)) + geom_point() 
+ggplot(joined_DEgenes, aes(x = logFC_uncorrected, y = logFC_corrected, color = logCPM_uncorrected)) + 
+  geom_point() + 
+  geom_rug(size=0.1) + 
+  geom_smooth(method = "loess", color = "red") + 
+  geom_text_repel(label = joined_DEgenes$gene_name_uncorrected)
