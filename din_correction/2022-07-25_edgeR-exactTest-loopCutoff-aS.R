@@ -1,21 +1,13 @@
 #!/bin/bash
 
-# written by AJ Sethi on 2022-07-17
-# aim: 
+# written by AJ abd BK on 2022-07-25
 
-####################################################################################################
-####################################################################################################
+###########################################################
 
 # load libraries 
 library(tidyverse)
 library(edgeR)
 library(EnhancedVolcano)
-
-####################################################################################################
-
-# set paths for all external data 
-
-########## featurecounts gene expression data 
 
 # JCSMR iMac: 
 counts_file <- "/Users/AJlocal/localGadiData/2022-06-22_HEK293-degradation-first4-AR_liqa-genome-alignments_BK/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
@@ -28,12 +20,14 @@ counts_file <- "/Users/AJlocal/localGadiData/2022-06-22_HEK293-degradation-first
 # JCSMR iMac
 liqa_transcript_counts <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/undegraded_hek293_pass1_primary.txt"
 
+# liqa_transcript_counts <- "//wsl.localhost/Ubuntu/home/bhavika_kumar/localGadiData/isoform_expression/undegraded_hek293_pass1_primary.txt"
+
 ########## biomart transcript lengths
 
 # JCSMR iMac
 bm_tx_lengths <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/2022-07-17_biomart-human-transcript-lengths.txt"
 
-####################################################################################################
+# bm_tx_lengths <- "d:/Users/Sujata Kumar/Desktop/Project/2022-07-17_biomart-human-transcript-lengths.txt"
 
 # import and preprocess the counts data from featureCounts + uLTRA 
 
@@ -43,6 +37,7 @@ raw_counts <- read_tsv(counts_file, col_names = T, skip = 1, col_types = "fccccd
   mutate(across(c(Start, End, Chr, Strand), gsub, pattern = ";.*", replacement = "")) %>% 
   mutate(chr = Chr) %>% 
   select(gene_id, gene_name, chr, wt_rep1, wt_rep2, deg_rep1, deg_rep2)
+
 
 ####################################################################################################
 
@@ -75,7 +70,6 @@ outside_genes <- bm %>% filter(gene_id %ni% merged$gene_id) %>%
 final_length_key <- bind_rows(merged %>% select(gene_id, transcript_length), outside_genes)
 
 ####################################################################################################
-
 # attach gene length to raw_counts 
 
 counts <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% 
@@ -88,89 +82,77 @@ name_key <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% select(
 # convert raw counts to matrix format 
 
 counts_import_matrix <- as.data.frame(counts)
-counts_matrix <- counts_import_matrix[,-1]
-row.names(counts_matrix) <- counts_import_matrix[,1]
+data_clean <- counts_import_matrix[,-1]
+row.names(data_clean) <- counts_import_matrix[,1]
 
-# define the groups for comparison 
-group <- c("control","control","degraded", "degraded")
+# log transform the counts 
+cpm_log <- cpm(data_clean, log = TRUE)
 
-# make DGE object 
-d <- DGEList(counts=counts_matrix,group=factor(group))
-d
+# get median count
+median_log2_cpm <- apply(cpm_log, 1, median)
 
-####################################################################################################
-
-# normalize counts using edgeR 
-
-# Normalization
-dt <- calcNormFactors(d,method="TMM") # further testing possible 
+# plot median log cpm 
+#plot hist(median_log2_cpm)
 
 ####################################################################################################
 
-# make a PCA plot 
-#plot plotMDS(dt, gene.selection="common")
+# create loop for expression cutoff 
 
-####################################################################################################
+testCutoff <- function(cutoff){
 
-# estimate dispersion and run edgeR 
-d1 <- estimateCommonDisp(dt, verbose=T)
-d1 <- estimateTagwiseDisp(d1)
+  # take the expression cutoff from the input 
+  expr_cutoff <- cutoff 
 
-# run edgeR
-design.mat <- model.matrix(~ 0 + dt$samples$group)
-colnames(design.mat) <- levels(dt$samples$group)
+  # filter for genes where the median log2 expression is greater than the cutoff 
+  data_clean <- data_clean[median_log2_cpm > expr_cutoff, ]
 
-# estimate dispersion 
-d2 <- estimateGLMCommonDisp(dt,design.mat)
-d2 <- estimateGLMTrendedDisp(d2,design.mat, method="auto")
-# You can change method to "auto", "bin.spline", "power", "spline", "bin.loess".
-# The default is "auto" which chooses "bin.spline" when > 200 tags and "power" otherwise.
-d2 <- estimateGLMTagwiseDisp(d2,design.mat)
 
-# do edgeR using GLM
-fit <- glmFit(d2,design.mat)
-
-# plot BCV 
-#plot plotBCV(d2)
-
-##############################################################################################################
-
-# get results from edgeR 
-
-# creating the contrast 
-raw_result <- glmLRT(fit,contrast=c(1,-1))
-
-# extract the differential expression data and convert it to a tibble and add gene names 
-DEtib <- raw_result[[14]] %>% 
-  as_tibble(rownames = "gene_id") %>% 
-  dplyr::rename(p.raw = PValue) %>% 
-  right_join(name_key, ., by = "gene_id")
-
-##############################################################################################################
-
-# create a loop to test different logCPM cutoffs and return the number of significant genes and the specificity 
-
-# first, write and test the loop 
-iterate_cpm <- function(cutoff){
+  # define the groups for comparison 
+  group <- c("control","control","degraded", "degraded")
   
-  a <- DE_highexpression <- DEtib %>% filter(logCPM > cutoff)
-  
-  a$p.adj <- p.adjust(a$p.raw, method = "fdr")
-  
-  
-  total_genes <- nrow(a)
-  sig_genes <- nrow(a %>% filter(p.adj < 0.1 & abs(logFC) > 1))
+  # make DGE object 
+  y <- DGEList(counts=data_clean,group=factor(group))
+  y
+
+  # normalize counts using edgeR 
+  y <- calcNormFactors(y)
+  y$samples
+
+  # estimate dispersion 
+  y <- estimateDisp(y)
+
+
+  # run the exact test 
+  et <- exactTest(y)
+  results_edgeR <- topTags(et, n = nrow(data_clean), sort.by = "none")
+
+  # extract the differential expression data and convert it to a tibble and add gene names 
+  DEtib <- et[[1]] %>% 
+    as_tibble(rownames = "gene_id") %>% 
+    dplyr::rename(p.raw = PValue) %>% 
+    right_join(name_key, ., by = "gene_id")
+
+  # correct the p-value
+  DEtib$p.adj <- p.adjust(DEtib$p.raw, method = "fdr")
+
+
+  total_genes <- nrow(DEtib)
+  sig_genes <- nrow(DEtib %>% filter(p.adj < 0.05 & abs(logFC) > 1))
   specificity <- total_genes/(total_genes + sig_genes)
-  # print(paste(total_genes, " total genes; ", sig_genes, " significant genes;", specificity, " specificity"))
+  print(paste(total_genes, " total genes; ", sig_genes, " significant genes;", specificity, " specificity"))
   
   return(c(cutoff, total_genes, sig_genes, specificity) %>% as_tibble())
 }
 
-# second, make a vector of values to run the loop over 
+##############################################################################################################
+
+# initialize parameters for the loop 
+
+# make a vector of values to run the loop over 
 ints <- seq(1, 10, 0.1) %>% as_tibble()
 
-# run the loop over our values 
-iteration_loop_out <- apply(ints, 1, iterate_cpm) %>% 
+# run the loop 
+iteration_loop_out <- apply(ints, 1, testCutoff) %>% 
   bind_cols() %>%  
   add_rownames() %>% 
   gather(var, value, -rowname) %>% 
@@ -182,4 +164,21 @@ iteration_loop_out <- apply(ints, 1, iterate_cpm) %>%
 # plot the results 
 ggplot(iteration_loop_out, aes(x = sig_genes, y = specificity, color = cutoff)) + geom_point()
 ggplot(iteration_loop_out, aes(x = total_genes, y = sig_genes, color = cutoff)) + geom_point() + scale_x_log10()
+
+##############################################################################################################
+
+# pick the cutoff 
+# 5.5cpm logCPM cutoff, 4721 genes,	61 DEG,	0.987244 specificity
+
+
+
+
+
+
+
+
+
+
+
+
 

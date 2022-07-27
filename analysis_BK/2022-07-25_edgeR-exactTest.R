@@ -1,39 +1,33 @@
 #!/bin/bash
 
-# written by AJ Sethi on 2022-07-17
-# aim: 
+# written by AJ abd BK on 2022-07-25
 
-####################################################################################################
-####################################################################################################
+###########################################################
 
 # load libraries 
 library(tidyverse)
 library(edgeR)
 library(EnhancedVolcano)
 
-####################################################################################################
-
-# set paths for all external data 
-
-########## featurecounts gene expression data 
-
 # JCSMR iMac: 
-counts_file <- "/Users/AJlocal/localGadiData/2022-06-22_HEK293-degradation-first4-AR_liqa-genome-alignments_BK/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
+#counts_file <- "/Users/AJlocal/localGadiData/2022-06-22_HEK293-degradation-first4-AR_liqa-genome-alignments_BK/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
 
 # Bhavika's laptop: 
-# counts_file <- "d:/Users/Sujata Kumar/Desktop/Project/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
+counts_file <- "d:/Users/Sujata Kumar/Desktop/Project/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
 
 ########## liqa transcript abundance
 
 # JCSMR iMac
-liqa_transcript_counts <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/undegraded_hek293_pass1_primary.txt"
+#liqa_transcript_counts <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/undegraded_hek293_pass1_primary.txt"
+
+liqa_transcript_counts <- "//wsl.localhost/Ubuntu/home/bhavika_kumar/localGadiData/isoform_expression/undegraded_hek293_pass1_primary.txt"
 
 ########## biomart transcript lengths
 
 # JCSMR iMac
-bm_tx_lengths <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/2022-07-17_biomart-human-transcript-lengths.txt"
+#bm_tx_lengths <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/2022-07-17_biomart-human-transcript-lengths.txt"
 
-####################################################################################################
+bm_tx_lengths <- "d:/Users/Sujata Kumar/Desktop/Project/2022-07-17_biomart-human-transcript-lengths.txt"
 
 # import and preprocess the counts data from featureCounts + uLTRA 
 
@@ -43,6 +37,7 @@ raw_counts <- read_tsv(counts_file, col_names = T, skip = 1, col_types = "fccccd
   mutate(across(c(Start, End, Chr, Strand), gsub, pattern = ";.*", replacement = "")) %>% 
   mutate(chr = Chr) %>% 
   select(gene_id, gene_name, chr, wt_rep1, wt_rep2, deg_rep1, deg_rep2)
+
 
 ####################################################################################################
 
@@ -75,7 +70,6 @@ outside_genes <- bm %>% filter(gene_id %ni% merged$gene_id) %>%
 final_length_key <- bind_rows(merged %>% select(gene_id, transcript_length), outside_genes)
 
 ####################################################################################################
-
 # attach gene length to raw_counts 
 
 counts <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% 
@@ -88,33 +82,83 @@ name_key <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% select(
 # convert raw counts to matrix format 
 
 counts_import_matrix <- as.data.frame(counts)
-counts_matrix <- counts_import_matrix[,-1]
-row.names(counts_matrix) <- counts_import_matrix[,1]
+data_clean <- counts_import_matrix[,-1]
+row.names(data_clean) <- counts_import_matrix[,1]
+
+# log transform the counts 
+cpm_log <- cpm(data_clean, log = TRUE)
+
+# get median count
+median_log2_cpm <- apply(cpm_log, 1, median)
+
+# plot median log cpm 
+hist(median_log2_cpm)
+
+expr_cutoff <- 3.5
+abline(v = expr_cutoff, col = "red", lwd = 3)
+sum(median_log2_cpm > expr_cutoff)
+data_clean <- data_clean[median_log2_cpm > expr_cutoff, ]
+
+# make a logCPM table after filtering
+cpm_log <- cpm(data_clean, log = TRUE)
+
+# cluster by heatmap
+heatmap(cor(cpm_log))
+
+# make a PCA
+pca <- prcomp(t(cpm_log), scale. = TRUE)
+plot(pca$x[, 1], pca$x[, 2], pch = ".", xlab = "PC1", ylab = "PC2")
+text(pca$x[, 1], pca$x[, 2], labels = colnames(cpm_log))
+summary(pca)
 
 # define the groups for comparison 
 group <- c("control","control","degraded", "degraded")
 
 # make DGE object 
-d <- DGEList(counts=counts_matrix,group=factor(group))
-d
+y <- DGEList(counts=data_clean,group=factor(group))
+y
 
 ####################################################################################################
 
 # normalize counts using edgeR 
 
 # Normalization
-dt <- calcNormFactors(d,method="TMM") # further testing possible 
+y <- calcNormFactors(y)
+y$samples
+
+# estimate dispersion 
+y <- estimateDisp(y)
+sqrt(y$common.dispersion) # biological coefficient of variation
+plotBCV(y)
+
+# run the exact test 
+et <- exactTest(y)
+results_edgeR <- topTags(et, n = nrow(data_clean), sort.by = "none")
+head(results_edgeR$table)
+
+# assess output 
+sum(results_edgeR$table$FDR < .05)
+plotSmear(et, de.tags = rownames(results_edgeR)[results_edgeR$table$FDR < .1])
+abline(h = c(-1, 1), col = "blue")
 
 ####################################################################################################
-
 # make a PCA plot 
 #plot plotMDS(dt, gene.selection="common")
 
 ####################################################################################################
 
 # estimate dispersion and run edgeR 
-d1 <- estimateCommonDisp(dt, verbose=T)
-d1 <- estimateTagwiseDisp(d1)
+y <- estimateDisp(dt)
+sqrt(y$common.dispersion) # biological coefficient of variation
+plotBCV(y)
+
+
+et <- exactTest(y)
+
+
+
+
+####################################################################################################
 
 # run edgeR
 design.mat <- model.matrix(~ 0 + dt$samples$group)
@@ -141,45 +185,29 @@ fit <- glmFit(d2,design.mat)
 raw_result <- glmLRT(fit,contrast=c(1,-1))
 
 # extract the differential expression data and convert it to a tibble and add gene names 
-DEtib <- raw_result[[14]] %>% 
+DEtib <- et[[1]] %>% 
   as_tibble(rownames = "gene_id") %>% 
   dplyr::rename(p.raw = PValue) %>% 
   right_join(name_key, ., by = "gene_id")
 
 ##############################################################################################################
 
-# create a loop to test different logCPM cutoffs and return the number of significant genes and the specificity 
+# # filter for expression level 
+# DE_highexpression <- DEtib %>% filter(logCPM > 5.5)
+# 
+# correct the p-value
+DEtib$p.adj <- p.adjust(DEtib$p.raw, method = "fdr")
 
-# first, write and test the loop 
-iterate_cpm <- function(cutoff){
-  
-  a <- DE_highexpression <- DEtib %>% filter(logCPM > cutoff)
-  
-  a$p.adj <- p.adjust(a$p.raw, method = "fdr")
-  
-  
-  total_genes <- nrow(a)
-  sig_genes <- nrow(a %>% filter(p.adj < 0.1 & abs(logFC) > 1))
-  specificity <- total_genes/(total_genes + sig_genes)
-  # print(paste(total_genes, " total genes; ", sig_genes, " significant genes;", specificity, " specificity"))
-  
-  return(c(cutoff, total_genes, sig_genes, specificity) %>% as_tibble())
-}
+# make a P-value plot
+#loop ggplot(DE_highexpression, aes(x = p.raw)) + geom_histogram()
 
-# second, make a vector of values to run the loop over 
-ints <- seq(1, 10, 0.1) %>% as_tibble()
+##############################################################################################################
 
-# run the loop over our values 
-iteration_loop_out <- apply(ints, 1, iterate_cpm) %>% 
-  bind_cols() %>%  
-  add_rownames() %>% 
-  gather(var, value, -rowname) %>% 
-  spread(rowname, value) %>% 
-  dplyr::select(-var) %>% 
-  dplyr::rename(cutoff = 1, total_genes = 2, sig_genes = 3, specificity = 4) %>% 
-  arrange(cutoff)
+# print total number of genes and detected significant genes 
 
-# plot the results 
-ggplot(iteration_loop_out, aes(x = sig_genes, y = specificity, color = cutoff)) + geom_point()
-ggplot(iteration_loop_out, aes(x = total_genes, y = sig_genes, color = cutoff)) + geom_point() + scale_x_log10()
+total_genes <- nrow(DEtib)
+sig_genes <- nrow(DEtib %>% filter(p.adj < 0.05 & abs(logFC) > 1))
+specificity <- total_genes/(total_genes + sig_genes)
+print(paste(total_genes, " total genes; ", sig_genes, " significant genes;", specificity, " specificity"))
 
+##############################################################################################################
