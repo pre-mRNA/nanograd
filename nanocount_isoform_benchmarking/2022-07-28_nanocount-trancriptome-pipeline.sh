@@ -34,18 +34,18 @@ function alignNano(){
   # get sample name
   sample=$(basename $reads .fastq | cut -c 5-)
 
-  # say that we're aligning
-  echo "$(date) .... aligning for ${sample}"
-
-  # first, align the reads to the reference transcriptome using minimap2
-  minimap2 -t 48 -ax map-ont -N 30 "${transcripts}" "${reads}" | samtools view -b -@ 48 | samtools sort -@ 48 > "${wd}/allAlignments_sorted_${sample}.bam" || echo "alignment failed for ${sample}"
-  samtools index "${wd}/allAlignments_sorted_${sample}.bam"
-
-  # say that we're aligning
-  echo "$(date) .... nanocount for ${sample}"
+  # # say that we're aligning
+  # echo "$(date) .... aligning for ${sample}"
+  #
+  # # first, align the reads to the reference transcriptome using minimap2
+  # minimap2 -t 48 -ax map-ont -N 30 "${transcripts}" "${reads}" | samtools view -b -@ 48 | samtools sort -@ 48 > "${wd}/allAlignments_sorted_${sample}.bam" || echo "alignment failed for ${sample}"
+  # samtools index "${wd}/allAlignments_sorted_${sample}.bam"
+  #
+  # # say that we're aligning
+  # echo "$(date) .... nanocount for ${sample}"
 
   # run nanocount
-  NanoCount -i "${wd}/allAlignments_sorted_${sample}.bam" -o "${wd}/isoformCounts_${sample}.txt" || echo "nanocount failed for ${sample}"
+  NanoCount -i "${wd}/allAlignments_sorted_${sample}.bam" -o "${wd}/isoformCounts_${sample}.txt" -b "${wd}/filtAlignments_sorted_${sample}.bam" || echo "nanocount failed for ${sample}"
 
 
 }; export -f alignNano
@@ -53,3 +53,6 @@ function alignNano(){
 # run the pipeline for each fastq
 for i in ${data}/*fastq; do alignNano "${i}" & done; wait && echo "done for all"
 exit
+
+# count gene expression
+for i in filt*; do samtools view -F 2308 $i | cut -f2 | sort | uniq -c > "./counts_${i##*/}.txt" & done; wait && echo "done for all"
