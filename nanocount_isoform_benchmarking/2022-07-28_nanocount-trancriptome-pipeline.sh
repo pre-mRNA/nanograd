@@ -45,7 +45,7 @@ function alignNano(){
   echo "$(date) .... nanocount for ${sample}"
 
   # run nanocount
-  NanoCount -i "${wd}/allAlignments_sorted_${sample}.bam" -o "${wd}/isoformCounts_${sample}.bam" || echo "nanocount failed for ${sample}"
+  NanoCount -i "${wd}/allAlignments_sorted_${sample}.bam" -o "${wd}/isoformCounts_${sample}.txt" || echo "nanocount failed for ${sample}"
 
 
 }; export -f alignNano
