@@ -17,3 +17,4 @@ conda update anaconda
 
 conda create -n NanoCount python=3.6
 conda activate NanoCount
+pip install NanoCount
