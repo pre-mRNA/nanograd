@@ -166,7 +166,7 @@ DEtib$p.adj <- p.adjust(DEtib$p.raw, method = "fdr")
 total_transcripts <- nrow(DEtib)
 sig_transcripts <- nrow(DEtib %>% filter(p.adj < 0.05 & abs(logFC) > 1))
 specificity <- total_transcripts/(total_transcripts + sig_transcripts)
-print(paste(total_transcripts, " total transcripts; ", sig_transcripts, " significant transcripts;", specificity, " transcripts"))
+print(paste(total_transcripts, " total transcripts; ", sig_transcripts, " significant transcripts;", specificity, " specificity"))
 
 # assign to a variable, corrected 
 corrected_DEtranscripts <- DEtib
