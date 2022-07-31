@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# written by AJ abd BK on 2022-07-30
+# written by AJ and BK on 2022-07-30
 
 ###########################################################
 
@@ -9,6 +9,7 @@
 
 # load library
 library(tidyverse)
+library(edgeR)
 
 # read data
 # AJ's Computer
@@ -59,6 +60,9 @@ import <- full_join(wt_1, wt_2, by="transcript") %>%
   replace(is.na(.), 0)
 
 # convert import to matrix
+
+testCutoff <- function(cutoff){
+  
 counts_import_matrix <- as.data.frame(import)
 data_clean <- counts_import_matrix[,-1]
 row.names(data_clean) <- counts_import_matrix[,1]
@@ -71,8 +75,11 @@ median_log2_cpm <- apply(cpm_log, 1, median)
 
 ####################################################################################################
 
-# running edgeR GLM without DIN
-expr_cutoff <- 5
+
+  
+  # take the expression cutoff from the input 
+  expr_cutoff <- cutoff 
+  
 
 # filter for transcripts where median log2 expression is greater than cutoff
 data_clean <- data_clean[median_log2_cpm > expr_cutoff, ]
@@ -113,6 +120,31 @@ total_transcripts <- nrow(DEtib)
 sig_transcripts <- nrow(DEtib %>% filter(p.adj < 0.05 & abs(logFC) > 1))
 specificity <- total_transcripts/(total_transcripts + sig_transcripts)
 print(paste(total_transcripts, " total transcripts; ", sig_transcripts, " significant transcripts;", specificity, " specificity"))
+
+
+return(c(cutoff, total_transcripts, sig_transcripts, specificity) %>% as_tibble())
+}
+
+##############################################################################################################
+
+# initialize parameters for the loop 
+
+# make a vector of values to run the loop over 
+ints <- seq(1, 10, 0.1) %>% as_tibble()
+
+# run the loop 
+iteration_loop_out <- apply(ints, 1, testCutoff) %>% 
+  bind_cols() %>%  
+  add_rownames() %>% 
+  gather(var, value, -rowname) %>% 
+  spread(rowname, value) %>% 
+  dplyr::select(-var) %>% 
+  dplyr::rename(cutoff = 1, total_genes = 2, sig_genes = 3, specificity = 4) %>% 
+  arrange(cutoff)
+
+# plot the results 
+ggplot(iteration_loop_out, aes(x = sig_genes, y = specificity, color = cutoff)) + geom_point()
+ggplot(iteration_loop_out, aes(x = total_genes, y = sig_genes, color = cutoff)) + geom_point() + scale_x_log10()
 
 # assign to a variable, uncorrected 
 uncorrected_DEtranscripts <- DEtib
@@ -167,6 +199,8 @@ total_transcripts <- nrow(DEtib)
 sig_transcripts <- nrow(DEtib %>% filter(p.adj < 0.05 & abs(logFC) > 1))
 specificity <- total_transcripts/(total_transcripts + sig_transcripts)
 print(paste(total_transcripts, " total transcripts; ", sig_transcripts, " significant transcripts;", specificity, " specificity"))
+
+
 
 # assign to a variable, corrected 
 corrected_DEtranscripts <- DEtib
