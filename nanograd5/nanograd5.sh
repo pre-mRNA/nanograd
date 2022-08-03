@@ -14,7 +14,7 @@
 
 # testing;
 # melbourne iMac
-# time bash nanograd4.sh /Users/asethi/localGadiData/2022-03-15_develop-nanograd4/allReadsTranscriptome_EnsemblnoPseudo.bam /Users/asethi/localGadiData/2022-03-15_develop-nanograd4/Mus_musculus.GRCm39.104.chr.gtf /Users/asethi/localGadiData/2022-03-15_develop-nanograd4/test_out.txt
+# time bash nanograd5.sh /Users/asethi/localGadiData/2022-03-15_develop-nanograd4/allReadsTranscriptome_EnsemblnoPseudo.bam /Users/asethi/localGadiData/2022-03-15_develop-nanograd4/Mus_musculus.GRCm39.104.chr.gtf /Users/asethi/localGadiData/2022-03-15_develop-nanograd4/test_out.txt
 
 # additional flags (to be implemented)
 
@@ -72,7 +72,13 @@ export anno=$2
 export out=$3
 
 ssec "Processing bam"
-samtools view -F 256 ${bam} | cut -f1,3,6,10 > ${out}.temp || die "cannot process bam"
+# extract data from the BAM to feed into R
+# col1 is readID
+# col3 is reference (transcript)
+# col4 is leftmost alignment coordinate (5' coordinate only for + strand alignments)
+# col6 is CIGAR (we use this to get ALIGNED length)
+# col10 is the sequence (from which we get the sequence length)
+samtools view -F 256 ${bam} | cut -f1,3,4,6,10 | awk '{print $1, $2, $3, $4, length($5)}' > ${out}.temp || die "cannot process bam"
 
 ssec "Running RScript"
 Rscript ${SCRIPTPATH}/scripts/process_bam.R "${anno}" "${out}.temp" "${out}" || die "cannot process reads"
