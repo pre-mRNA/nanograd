@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# about 
+# about
 
 # make exploratory plots to see if we should use sequence read length or alignment length
 # input is a 5-col vector consisting of:
@@ -8,9 +8,9 @@
 
 ############################################################
 
-# housekeeping 
+# housekeeping
 
-# import positional arguments 
+# import positional arguments
 args = commandArgs(trailingOnly=TRUE)
 
 ### for testing, args <- c("/Users/asethi/localGadiData/2021-12-24_test-custom-metaplot/Mus_musculus.GRCm39.104.chr.gtf", "/Users/asethi/localGadiData/2022-03-15_develop-nanograd4/test_out.txt.temp", "/Users/asethi/localGadiData/2022-03-15_develop-nanograd4/nanograd5_Rout.txt")
@@ -20,7 +20,7 @@ if (length(args)!=3) {
   stop("\nUsage: Rscript process_bam.R /path/to/bar.gtf /path/to/bamdata.txt /path/to/output.txt", call.=FALSE)
 }
 
-# load packages quietly 
+# load packages quietly
 suppressPackageStartupMessages({
   library(tidyverse)
   library(GenomicFeatures)
@@ -29,14 +29,14 @@ suppressPackageStartupMessages({
 
 ############################################################
 
-# read in the trimmed BAM data 
+# read in the trimmed BAM data
 
-input <- read_delim(args[2], delim = " ", col_names = F, col_types = "ffdcd", n_max = 100000) %>%
-  dplyr::rename(read = 1, tx = 2, start_coord = 3, cig = 4, seq_len = 5) 
+input <- read_delim(args[2], delim = " ", col_names = F, col_types = "ffdcd") %>%
+  dplyr::rename(read = 1, tx = 2, start_coord = 3, cig = 4, seq_len = 5)
 
 ############################################################
 
-# calculate the aligned length of read by parsing CIGAR matches 
+# calculate the aligned length of read by parsing CIGAR matches
 
 # parse CIGAR
 matcher <- function(pattern, x) {
@@ -61,12 +61,12 @@ addcig <- input %>%
   rowwise %>% mutate(map_len = cigarsums(cig)) %>%
   dplyr::select(-cig)
 
-# memory management 
+# memory management
 rm(input)
 
-# exploratory plots 
-ggplot(addcig, aes(x = seq_len, y = map_len, color = tx)) + geom_point() + scale_x_log10() + scale_y_log10() + geom_abline(xintercept = 0) 
-ggplot(addcig, aes(x = map_len, y = start_coord, color = tx)) + geom_point(alpha = 0.01) + facet_wrap(~tx)
+# exploratory plots
+# ggplot(addcig, aes(x = seq_len, y = map_len, color = tx)) + geom_point() + scale_x_log10() + scale_y_log10() + geom_abline(xintercept = 0)
+# ggplot(addcig, aes(x = map_len, y = start_coord, color = tx)) + geom_point(alpha = 0.01) + facet_wrap(~tx)
 
 ############################################################
 
@@ -74,17 +74,17 @@ ggplot(addcig, aes(x = map_len, y = start_coord, color = tx)) + geom_point(alpha
 decay <- addcig %>%
   group_by(tx) %>%
   mutate(nread = n()) %>%
-  ungroup() %>% 
+  ungroup() %>%
   dplyr::select(-read, -nread) %>%
   group_by(tx) %>%
   summarise(median_align = median(map_len), cov = n())
 
-# memory management 
+# memory management
 rm(addcig)
 
 ############################################################
 
-# parse the annotation and merge transcript length and biotype information with the previous length calls 
+# parse the annotation and merge transcript length and biotype information with the previous length calls
 
 # process the annotation
 anno <- args[1]
@@ -113,11 +113,11 @@ rm(gtf, txlen, tx_biotype)
 
 ############################################################
 
-# merge transcriptome data with the original decay data 
+# merge transcriptome data with the original decay data
 
 # join data to decay
-decay2 <- inner_join(decay %>% 
-                       separate(tx, into=c("transcript_id", "transcript_version"), sep = "([.])", extra = "merge") %>% 
+decay2 <- inner_join(decay %>%
+                       separate(tx, into=c("transcript_id", "transcript_version"), sep = "([.])", extra = "merge") %>%
                        dplyr::select(-transcript_version),
                      merged_metadata, by = "transcript_id") %>%
   mutate(df_ratio = median_align / tx_len)
@@ -129,7 +129,7 @@ write_tsv(decay2, paste(args[3], ".tmp", sep = ""), col_names = T)
 
 ############################################################
 
-# calculate DIN and print 
+# calculate DIN and print
 
 DIN <- decay2  %>%
   mutate(df_ratio = median_align / tx_len) %>%
@@ -142,4 +142,3 @@ print(paste("Sample DIN is equal to ", round(DIN, 3)))
 a <- c("Sample DIN:", DIN) %>% as.data.frame()
 
 write_tsv(a, args[3], col_names = F)
-

@@ -81,7 +81,7 @@ ssec "Processing bam"
 # col4 is leftmost alignment coordinate (5' coordinate only for + strand alignments)
 # col6 is CIGAR (we use this to get ALIGNED length)
 # col10 is the sequence (from which we get the sequence length)
-samtools view -@ "${threadCount}" -F 256 ${bam} | cut -f1,3,4,6,10 | awk '{print $1, $2, $3, $4, length($5)}' > ${out}.temp || die "cannot process bam"
+samtools view -@ "${threadCount}" -F 2324 ${bam} | cut -f1,3,4,6,10 | awk '{print $1, $2, $3, $4, length($5)}' > ${out}.temp || die "cannot process bam"
 
 ssec "Running RScript"
 Rscript ${SCRIPTPATH}/scripts/process_bam.R "${anno}" "${out}.temp" "${out}" || die "cannot process reads"

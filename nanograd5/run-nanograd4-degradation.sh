@@ -6,12 +6,12 @@
 
 # define variables
 export data="/g/data/xc17/degradation_project/Mg_degraded/basecalled/"
-export nanograd4="/home/150/as7425/nanograd/nanograd4/nanograd4.sh"
+export nanograd5="/home/150/as7425/nanograd/nanograd5/nanograd5.sh"
 export annotation="/g/data/lf10/as7425/genomes/human_genome/Homo_sapiens.GRCh38.104.chr.gtf"
 # export annotation="/g/data/lf10/as7425/genomes/human_genome/Homo_sapiens_transcriptsOnly_GRCh38.104.chr.gtf" # transcripts only
 
 # make working directory
-export wd="/g/data/lf10/as7425/nanograd/analysis/2022-04-05_test-nanograd4-decay"
+export wd="/g/data/lf10/as7425/nanograd/analysis/2022-08-04_test-nanograd5-decayFirst4"; mkdir -p ${wd} 2>/dev/null
 
 # write a function to run nanograd for a given bam
 function runNano(){
@@ -21,18 +21,24 @@ function runNano(){
   local bamLong=${bam##*/}
   local name=${bamLong%.*}
 
-  time bash ${nanograd4} ${bam} ${annotation} ${wd}/${name}_nanograd4_out.txt
+  time bash ${nanograd5} ${bam} ${annotation} ${wd}/${name}_nanograd5_out.txt 
 }; export -f runNano
 
 # load R
 module load R samtools
 
 # find bams in data
-for i in $(find $data -name "*bam" ); do runNano $i; done; wait && echo "done for all"
+for i in $(find $data -name "*bam" ); do runNano $i & done; wait && echo "done for all"
 
 # for benchmarking, count reads in library
 export data="/g/data/xc17/degradation_project/Mg_degraded/basecalled/"
 for i in $(find $data -name "*bam" ); do printf "$i\t$(samtools view $i | wc -l)\n"; done; wait && echo "done for all"
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+#### old nanograd4 benchmarking below:
 
 # for benchmarking, count basecalled reads in library
 export data="/g/data/xc17/degradation_project/Mg_degraded/basecalled/"
