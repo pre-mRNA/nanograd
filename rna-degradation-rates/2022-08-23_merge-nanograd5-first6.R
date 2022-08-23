@@ -92,7 +92,7 @@ merged_tin <- bind_rows(import_tin("~/localGadiData/2022-08-23_nanograd5-degrada
                         import_tin("~/localGadiData/2022-08-23_nanograd5-degradation-first6/all.5mM_MgCl_degrdation_pass1.fastq.gz.sorted_nanograd5_out.txt.tmp", "heavy_rep1", "heavy_degradation"),
                         import_tin("~/localGadiData/2022-08-23_nanograd5-degradation-first6/all.5mM_MgCl_degrdation_pass2.fastq.gz.sorted_nanograd5_out.txt.tmp", "heavy_rep2", "heavy_degradation"))
 
-# take the average per condition 
+# take the average per condition te
 merged_per_condition_tin <- merged_tin %>% 
   group_by(transcript_id, condition) %>% 
   summarise(tin = weighted.mean(tin, cov), sum_cov = sum(cov)) %>%
@@ -115,6 +115,8 @@ rownames(merged_matrix) <- merged_per_condition_tin$transcript_id
 dev.new(width = 12, height = 12, noRStudioGD = T, unit = "cm")
 Heatmap(merged_matrix)
 
+# save the data 
+write_tsv(merged_per_condition_tin, ".data/2022-08-23_degradation-first6-perConditionTin.txt.gz", col_names = T)
 
 
 
