@@ -1,7 +1,9 @@
-<<<<<<< HEAD
 #!/bin/bash
 
-# written by AJ abd BK on 2022-07-25
+# aim: to compare before-DIN and after-DIN gene expression changes from the first4 degraded samples
+
+# written by AJ and BK on 2022-07-25
+# last updated by AJ on 2022-08-05
 
 ###########################################################
 
@@ -11,24 +13,26 @@ library(edgeR)
 library(EnhancedVolcano)
 
 # JCSMR iMac: 
-#counts_file <- "/Users/AJlocal/localGadiData/2022-06-22_HEK293-degradation-first4-AR_liqa-genome-alignments_BK/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
+counts_file <- "~/localGadiData/2022-06-22_HEK293-degradation-first4-AR_liqa-genome-alignments_BK/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
 
 # Bhavika's laptop: 
- counts_file <- "d:/Users/Sujata Kumar/Desktop/Project/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
+# counts_file <- "d:/Users/Sujata Kumar/Desktop/Project/2022-07-05_ARdegradation-genomic-featurecounts-AS.txt"
 
 ########## liqa transcript abundance
 
 # JCSMR iMac
-#liqa_transcript_counts <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/undegraded_hek293_pass1_primary.txt"
+# liqa_transcript_counts <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/undegraded_hek293_pass1_primary.txt"
 
- liqa_transcript_counts <- "//wsl.localhost/Ubuntu/home/bhavika_kumar/localGadiData/isoform_expression/undegraded_hek293_pass1_primary.txt"
+# Bhavika's laptop 
+# liqa_transcript_counts <- "//wsl.localhost/Ubuntu/home/bhavika_kumar/localGadiData/isoform_expression/undegraded_hek293_pass1_primary.txt"
 
 ########## biomart transcript lengths
 
 # JCSMR iMac
-#bm_tx_lengths <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/2022-07-17_biomart-human-transcript-lengths.txt"
+# bm_tx_lengths <- "/Users/AJlocal/localGadiData/2022-07-17_LIQA_isoform_counts/2022-07-17_biomart-human-transcript-lengths.txt"
 
- bm_tx_lengths <- "d:/Users/Sujata Kumar/Desktop/Project/2022-07-17_biomart-human-transcript-lengths.txt"
+# Bhavika's laptop 
+# bm_tx_lengths <- "d:/Users/Sujata Kumar/Desktop/Project/2022-07-17_biomart-human-transcript-lengths.txt"
 
 # import and preprocess the counts data from featureCounts + uLTRA 
 
@@ -44,59 +48,67 @@ raw_counts <- read_tsv(counts_file, col_names = T, skip = 1, col_types = "fccccd
 
 # use LIQA output to calculate the most likely isoform and transcript length for each gene 
 
-liqa <- read_tsv(liqa_transcript_counts, col_names = T, col_types = "ffddd") %>% 
-  rename(transcript_id = IsoformName) %>% 
-  rename(transcript_abundance = ReadPerGene_corrected) %>% 
-  select(transcript_id, transcript_abundance)
-
-# from bioMart, for humans, download a table of gene id, transcript_id, and transcirpt length (including UTRs and CDS)
-# uploaded to OneDrive as 2022-07-17_biomart-transcript-lengths.txt
-
-bm <- read_tsv(bm_tx_lengths, col_names = T) %>% 
-  rename(gene_id = 1, transcript_id = 3, transcript_length = 5) %>% 
-  select(gene_id, transcript_id, transcript_length)
-
-# merge the data 
-merged <- left_join(bm, liqa, by = "transcript_id") %>% 
-  group_by(gene_id) %>% 
-  slice(which.max(transcript_abundance))
-
-# figure out which genes are not in merged
-`%ni%` <- Negate(`%in%`)
-outside_genes <- bm %>% filter(gene_id %ni% merged$gene_id) %>% 
-  group_by(gene_id) %>% 
-  summarise(transcript_length = mean(transcript_length))
-
-# merge merged with outside_genes to have a length for each gene 
-final_length_key <- bind_rows(merged %>% select(gene_id, transcript_length), outside_genes)
-
+### note: the following section actually isn't needed for edgeR
+# 
+# liqa <- read_tsv(liqa_transcript_counts, col_names = T, col_types = "ffddd") %>% 
+#   rename(transcript_id = IsoformName) %>% 
+#   rename(transcript_abundance = ReadPerGene_corrected) %>% 
+#   select(transcript_id, transcript_abundance)
+# 
+# # from bioMart, for humans, download a table of gene id, transcript_id, and transcirpt length (including UTRs and CDS)
+# # uploaded to OneDrive as 2022-07-17_biomart-transcript-lengths.txt
+# 
+# bm <- read_tsv(bm_tx_lengths, col_names = T) %>% 
+#   rename(gene_id = 1, transcript_id = 3, transcript_length = 5) %>% 
+#   select(gene_id, transcript_id, transcript_length)
+# 
+# # merge the data 
+# merged <- left_join(bm, liqa, by = "transcript_id") %>% 
+#   group_by(gene_id) %>% 
+#   slice(which.max(transcript_abundance))
+# 
+# # figure out which genes are not in merged
+# `%ni%` <- Negate(`%in%`)
+# outside_genes <- bm %>% filter(gene_id %ni% merged$gene_id) %>% 
+#   group_by(gene_id) %>% 
+#   summarise(transcript_length = mean(transcript_length))
+# 
+# # merge merged with outside_genes to have a length for each gene 
+# final_length_key <- bind_rows(merged %>% select(gene_id, transcript_length), outside_genes)
+# 
 ####################################################################################################
-# attach gene length to raw_counts 
-
-counts <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% 
-  select(gene_id, wt_rep1, wt_rep2, deg_rep1, deg_rep2)
-
-name_key <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% select(gene_id, gene_name)
-
+# # attach gene length to raw_counts 
+# 
+# counts <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% 
+#   select(gene_id, wt_rep1, wt_rep2, deg_rep1, deg_rep2)
+# 
+# name_key <- inner_join(raw_counts, final_length_key, by = "gene_id") %>% select(gene_id, gene_name)
+# 
 ####################################################################################################
-
+ 
 # convert raw counts to matrix format 
 
-  
+# when ignoring the LIQA merging code, make the counts matrix as so: 
+counts <- raw_counts %>% 
+  select(gene_id, wt_rep1, wt_rep2, deg_rep1, deg_rep2)
+
+name_key <- raw_counts %>% select(gene_id, gene_name)
+
+# make the counts matrix 
 counts_import_matrix <- as.data.frame(counts)
 data_clean <- counts_import_matrix[,-1]
 row.names(data_clean) <- counts_import_matrix[,1]
-  
-# log transform the counts 
+
+# log transform the counts
 cpm_log <- cpm(data_clean, log = TRUE)
-  
+
 # get median count
 median_log2_cpm <- apply(cpm_log, 1, median)
-  
-  
+
 ####################################################################################################
 
-# first, do edgeR GLM without including DIN 
+# first, do edgeR GLM without including DIN
+# assign the output to 'uncorrected_deGenes'
 
 expr_cutoff <- 5
 
@@ -121,6 +133,9 @@ y <- DGEList(counts=data_clean,group=factor(group))
 y <- calcNormFactors(y)
 y$samples
 
+# plot MDS plot 
+plotMDS(y)
+
 # estimate dispersion 
 y <- estimateDisp(y, design)
 fit <- glmFit(y, design)
@@ -143,6 +158,37 @@ print(paste(total_genes, " total genes; ", sig_genes, " significant genes;", spe
 
 # assign to a variable, uncorrected 
 uncorrected_DEgenes <- DEtib
+
+# make a volcano plot for uncorrected_DEgenes
+EnhancedVolcano(uncorrected_DEgenes,
+                lab = uncorrected_DEgenes$gene_name,
+                x = "logFC",
+                y = "p.adj",
+                title = '',
+                xlab = bquote(~Log[2]~ 'fold change'),
+                pCutoff = 0.1,
+                pointSize = 2.0,
+                labSize = 4,
+                colAlpha = 0.5,
+                legendPosition = 'right',
+                legendLabSize = 12,
+                legendIconSize = 4.0,
+                drawConnectors = FALSE,
+                widthConnectors = 0.5, 
+                typeConnectors = "closed",
+                endsConnectors = "first",
+                lengthConnectors = unit(0.01, "npc"),
+                colConnectors = "grey10") + 
+  coord_cartesian(ylim=c(0,40))
+
+# copy all genes 
+
+# copy significant genes 
+DEtib %>% filter(p.adj < 0.05 & abs(logFC) > 1) %>% select(gene_id) %>% unique() %>% clipr::write_clip()
+
+# copy all genes 
+DEtib %>% select(gene_id) %>% unique() %>% clipr::write_clip()
+
 
 ##############################################################################################################
 
@@ -175,11 +221,16 @@ y <- DGEList(counts=data_clean,group=factor(group))
 y <- calcNormFactors(y)
 y$samples
 
+# plot MDS plot 
+plotMDS(y, col=as.numeric(y$samples$group))
+
 # estimate dispersion 
 y <- estimateDisp(y, design)
 fit <- glmFit(y, design)
 lrt <- glmLRT(fit, coef = 2)
 topTags(lrt)
+
+plotMDS(lrt, gene.selection="common")
 
 # extract the differential expression data and convert it to a tibble and add gene names 
 DEtib <- lrt[[14]] %>% 
