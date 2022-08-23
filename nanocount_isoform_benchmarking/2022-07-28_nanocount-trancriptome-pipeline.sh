@@ -55,4 +55,4 @@ for i in ${data}/*fastq; do alignNano "${i}" & done; wait && echo "done for all"
 exit
 
 # count gene expression
-for i in filt*; do samtools view -F 2308 $i | cut -f2 | sort | uniq -c > "./counts_${i##*/}.txt" & done; wait && echo "done for all"
+for i in filt*; do samtools view -F 2308 $i | cut -f3 | sort | uniq -c > "./counts_${i##*/}.txt" & done; wait && echo "done for all"
