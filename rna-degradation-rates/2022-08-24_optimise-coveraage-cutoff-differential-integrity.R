@@ -100,7 +100,7 @@ ggplot(cutoff_output, aes(x = tx_count, y = cor, color = cutoff)) +
 ggsave("./plots/2022-08-24_differential-integrity-pool-replicates-cutoff.png", plot = last_plot(), height = 15, width = 15, unit = "cm")
 
 
-# take the average per condition te
+# take the average tin per condition 
 merged_per_condition_tin <- merged_tin %>% 
   group_by(transcript_id, condition) %>% 
   summarise(tin = weighted.mean(tin, cov), sum_cov = sum(cov)) %>%
