@@ -116,7 +116,7 @@ dev.new(width = 12, height = 12, noRStudioGD = T, unit = "cm")
 Heatmap(merged_matrix)
 
 # save the data 
-write_tsv(merged_per_condition_tin, ".data/2022-08-23_degradation-first6-perConditionTin.txt.gz", col_names = T)
+write_tsv(merged_per_condition_tin, "./data/2022-08-23_degradation-first6-perConditionTin.txt.gz", col_names = T)
 
 
 
