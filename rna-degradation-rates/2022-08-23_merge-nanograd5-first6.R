@@ -5,7 +5,7 @@
 # Written by AS on 2022-08-23
 # Last modified by AS on 2022-08-23
 
-# download data from gadi
+# download data from Gadi
 # at /g/data/lf10/as7425/nanograd/analysis/2022-08-23_nanograd5-degradation-first6
 
 ###########################
@@ -17,13 +17,13 @@ library(ComplexHeatmap)
 
 ###########################
 
+
 # write a function to import data 
 import_tin <- function(dataPath, mySample, myCondition){
   
   # read the tsv 
   read_tsv(dataPath, col_names = T, col_types = "fddfffddddd") %>% 
     dplyr::rename(tin = df_ratio) %>% 
-    dplyr::filter(cov > 5) %>% 
     dplyr::select(transcript_id, tin) %>% 
     mutate(condition = myCondition, sample = mySample)
 }
@@ -72,7 +72,7 @@ cor_data <- tin_matrix_complete %>%
 
 ###########################
 
-# pool the replicates 
+# pool the replicates by condition  
 
 # write a function to import data 
 import_tin <- function(dataPath, mySample, myCondition){
@@ -96,17 +96,19 @@ merged_tin <- bind_rows(import_tin("~/localGadiData/2022-08-23_nanograd5-degrada
 merged_per_condition_tin <- merged_tin %>% 
   group_by(transcript_id, condition) %>% 
   summarise(tin = weighted.mean(tin, cov), sum_cov = sum(cov)) %>%
-  filter(sum_cov > 10) %>% 
+  filter(sum_cov > 10) %>% # impose an arbitrary cutoff for sum_cov and this needs to be tuned 
   select(-sum_cov) %>% 
-  pivot_wider(names_from = condition, values_from = tin) %>% x
+  pivot_wider(names_from = condition, values_from = tin) %>% 
   na.omit() %>% 
   dplyr::select(transcript_id, undegraded, mildly_degraded, heavy_degradation)
 
-merged_per_condition_tin # 3506 transcripts 
+merged_per_condition_tin # 3516 transcripts 
 
 ###########################
 
-# convert to matrix and make a heatmap 
+# make a complex heatmap 
+
+# we first want to convert to marix format
 merged_matrix <- merged_per_condition_tin %>% ungroup() %>% select(-transcript_id) %>% as.matrix()
 rownames(merged_matrix) <- merged_per_condition_tin$transcript_id
 
