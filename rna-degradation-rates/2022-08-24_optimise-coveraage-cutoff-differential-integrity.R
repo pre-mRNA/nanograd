@@ -112,3 +112,51 @@ merged_per_condition_tin <- merged_tin %>%
 
 
 merged_per_condition_tin # 3516 transcripts 
+
+
+###########################
+
+# export tables for cutoffs of 0, 5, 12
+
+cutoff <- 0 
+filt0 <- merged_tin %>% 
+  group_by(transcript_id, condition) %>% 
+  summarise(tin = weighted.mean(tin, cov), sum_cov = sum(cov)) %>%
+  filter(sum_cov > cutoff) %>% # impose an arbitrary cutoff for sum_cov and this needs to be tuned 
+  select(-sum_cov) %>% 
+  pivot_wider(names_from = condition, values_from = tin) %>% 
+  na.omit() %>% 
+  dplyr::select(transcript_id, undegraded, mildly_degraded, heavy_degradation)
+
+filt0
+dim(filt0) # 24k transcripts
+
+cutoff <- 5
+filt5 <- merged_tin %>% 
+  group_by(transcript_id, condition) %>% 
+  summarise(tin = weighted.mean(tin, cov), sum_cov = sum(cov)) %>%
+  filter(sum_cov > cutoff) %>% # impose an arbitrary cutoff for sum_cov and this needs to be tuned 
+  select(-sum_cov) %>% 
+  pivot_wider(names_from = condition, values_from = tin) %>% 
+  na.omit() %>% 
+  dplyr::select(transcript_id, undegraded, mildly_degraded, heavy_degradation)
+filt5 #6.7k transcripts 
+
+cutoff <- 12
+filt12 <- merged_tin %>% 
+  group_by(transcript_id, condition) %>% 
+  summarise(tin = weighted.mean(tin, cov), sum_cov = sum(cov)) %>%
+  filter(sum_cov > cutoff) %>% # impose an arbitrary cutoff for sum_cov and this needs to be tuned 
+  select(-sum_cov) %>% 
+  pivot_wider(names_from = condition, values_from = tin) %>% 
+  na.omit() %>% 
+  dplyr::select(transcript_id, undegraded, mildly_degraded, heavy_degradation)
+filt12 #2.9k transcripts 
+
+# export data 
+write_tsv(filt0, "./data/2022-08-24_degradationFirst6-poolTin-noCutoff.txt.gz", col_names = T)
+write_tsv(filt5, "./data/2022-08-24_degradationFirst6-poolTin-filt5.txt.gz", col_names = T)
+write_tsv(filt12, "./data/2022-08-24_degradationFirst6-poolTin-filt12.txt.gz", col_names = T)
+
+
+
