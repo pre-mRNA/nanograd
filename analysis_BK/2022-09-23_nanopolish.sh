@@ -10,13 +10,13 @@
 export data="/g/data/xc17/degradation_project/Mg_degraded/data"
 
 # installing nanopolish
-export install_nanopolish="/g/data/xc17/bk9031/apps"
+# export install_nanopolish="/g/data/xc17/bk9031/apps"
 
-cd ${install_nanopolish}
+# cd ${install_nanopolish}
 
-git clone --recursive https://github.com/jts/nanopolish.git
-cd nanopolish
-make
+# git clone --recursive https://github.com/jts/nanopolish.git
+# cd nanopolish
+# make
 
 #  data preprocessing
 runNano() {
