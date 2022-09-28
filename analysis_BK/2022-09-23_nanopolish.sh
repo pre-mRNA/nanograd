@@ -6,6 +6,22 @@
 #############################################################
 #############################################################
 
+# path to data
+export data="/g/data/xc17/degradation_project/Mg_degraded/data"
+
+# path to reference genome
+export genome="/g/data/xc17/as7425/sharing/genomes/human_genome/transcriptome/GRCh38_codingPlusNoncoding_noPsuedo.fa"
+
+# defining output path
+export outputDir="/g/data/xc17/bk9031/2022_nanograd_bk/analysis/2021_HEK293-degradation-first4-AR/nanopolish"
+mkdir -p ${outputDir}
+
+# nanopolish path
+export PATH="${PATH}:/g/data/xc17/as7425/sharing/apps/nanopolish"
+
+##################################################
+##################################################
+
 # for sample wt_1
 sum_wt_1="/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass1/sequencing_summary_FAQ86281_15c37cc7.txt"
 fast5_wt_1="/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass1"
@@ -45,20 +61,6 @@ bam_deg2="/g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-firs
 ##################################################
 ##################################################
 
-
-# path to data
-export data="/g/data/xc17/degradation_project/Mg_degraded/data"
-
-# path to reference genome
-export genome="/g/data/xc17/as7425/sharing/genomes/human_genome/transcriptome/GRCh38_codingPlusNoncoding_noPsuedo.fa"
-
-# defining output path
-export outputDir="/g/data/xc17/bk9031/2022_nanograd_bk/analysis/2021_HEK293-degradation-first4-AR/nanopolish"
-mkdir -p ${outputDir}
-
-# nanopolish path
-export PATH="${PATH}:/g/data/xc17/as7425/sharing/apps/nanopolish"
-
 # write a function to run nanopolish for each library
 runNano() {
 
@@ -97,9 +99,3 @@ time runNano "${sum_mild_deg1}" "${fast5_mild_deg1}" "${fastq_mild_deg1}" "${bam
 time runNano "${sum_mild_deg2}" "${fast5_mild_deg2}" "${fastq_mild_deg2}" "${bam_mild_deg2}" || echo "failed for mild 2"
 time runNano "${sum_deg1}" "${fast5_deg1}" "${fastq_deg1}" "${bam_deg1}" || echo "failed for deg 1"
 time runNano "${sum_deg2}" "${fast5_deg2}" "${fastq_deg2}" "${bam_deg2}" || echo "failed for deg 2"
-
-# running nanopolish for one sample
-runNano ${sum_wt_1} ${fast5_wt_1} ${fastq_wtt_1} ${bam_wt_1} ${genome}
-
-for i in ${data}; do runNano ${i} & done
-wait && echo "done for all"
