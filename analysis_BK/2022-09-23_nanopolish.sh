@@ -9,6 +9,15 @@
 # getting data
 export data="/g/data/xc17/degradation_project/Mg_degraded/data"
 
+# installing nanopolish
+export install_nanopolish="/g/data/xc17/bk9031/apps"
+
+cd ${install_nanopolish}
+
+git clone --recursive https://github.com/jts/nanopolish.git
+cd nanopolish
+make
+
 #  data preprocessing
 runNano() {
   local seq_sum=$1
@@ -24,6 +33,9 @@ runNano() {
   nanopolish eventalign --reads ${fastq} --bam ${alignment} --genome ${genome} || echo "$(date)....nanopolish alignment failed"
   echo "$(date)....done alignment for nanopolish"
 }; export -f runNano
+
+# defining path of genome
+export genome="/g/data/xc17/bk9031/genomes/human_genome/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa"
 
 # example command
 runNano ${sum_wt_1} ${fast5_wt_1} ${fastq_wtt_1} ${bam_wt_1} ${genome}
