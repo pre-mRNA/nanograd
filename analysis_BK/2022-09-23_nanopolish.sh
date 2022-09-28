@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # written by BK on 2022-09-23
-# aim: script for nanopolish 
+# aim: script for nanopolish
 
 #############################################################
 #############################################################
@@ -28,12 +28,15 @@ runNano() {
 # example command
 runNano ${sum_wt_1} ${fast5_wt_1} ${fastq_wtt_1} ${bam_wt_1} ${genome}
 
+
+# genome
+export genome="/g/data/xc17/bk9031/genomes/human_genome/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa"
+
 # for sample wt_1
 sum_wt_1= "/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass1/sequencing_summary_FAQ86281_15c37cc7.txt"
 fast5_wt_1="/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass1"
 fastq_wt_1="/g/data/xc17/degradation_project/Mg_degraded/basecalled/undegraded_hek293_pass1/all.undegraded_hek293_pass1.fastq.gz"
 bam_wt_1="/g/data/xc17/bk9031/2022_nanograd_bk/analysis/2021_HEK293-degradation-first4-AR/primaryAlignments/undegraded_hek293_pass1_primary.bam"
-genome="/g/data/xc17/bk9031/genomes/human_genome/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa"
 
 # for sample wt_2
 sum_wt_2="/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass2/sequencing_summary_FAP73818_93b719e9.txt"
@@ -64,5 +67,3 @@ sum_deg2="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_
 fast5_deg2="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_pass2        "
 fastq_deg2="/g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-first4-AR/5mM_MgCl_degrdation_pass2/all.5mM_MgCl_degrdation_pass2.fastq.gz"
 bam_deg2="/g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-first4-AR/5mM_MgCl_degrdation_pass2/all.5mM_MgCl_degrdation_pass2.fastq.gz.sorted.bam"
-
-
