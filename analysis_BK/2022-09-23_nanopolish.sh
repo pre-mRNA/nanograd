@@ -1,10 +1,19 @@
 #!/bin/bash
+#PBS -P xc17
+#PBS -l walltime=48:00:00
+#PBS -l mem=190GB
+#PBS -l ncpus=48
+#PBS -q normal
+#PBS -M bhavika.kumar@anu.edu.au
+#PBS -l storage=scratch/xc17+gdata/xc17
 
 # written by BK on 2022-09-23
 # aim: script for nanopolish
 
 #############################################################
 #############################################################
+
+
 
 # path to data
 export data="/g/data/xc17/degradation_project/Mg_degraded/data"
