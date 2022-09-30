@@ -129,7 +129,7 @@ export -f runNano
 time runNano "${sum_wt_1}" "${fast5_wt_1}" "${fastq_wt_1}" "${bam_wt_1}" || echo "failed for wt 1"
 time runNano "${sum_wt_2}" "${fast5_wt_2}" "${fastq_wt_2}" "${bam_wt_2}" || echo "failed for wt 2"
 time runNano "${sum_mild_deg1}" "${fast5_mild_deg1}" "${fastq_mild_deg1}" "${bam_mild_deg1}" || echo "failed for mild 1"
-time runNano "${sum_mild_deg2}" "${fast5_mild_deg2}" "${fastq_mild_deg2}" "${bam_mild_deg2}" || echo "failed for mild 2"
+time runNano "${sum_mild_deg2}" "${fast5_mild_cd pdeg2}" "${fastq_mild_deg2}" "${bam_mild_deg2}" || echo "failed for mild 2"
 time runNano "${sum_deg1}" "${fast5_deg1}" "${fastq_deg1}" "${bam_deg1}" || echo "failed for deg 1"
 time runNano "${sum_deg2}" "${fast5_deg2}" "${fastq_deg2}" "${bam_deg2}" || echo "failed for deg 2"
 >>>>>>> 83646f3a340cd04398cebb8cbe15e762e34960cc
