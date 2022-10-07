@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # written by BK on 2022-09-23
-# aim: script for nanopolish 
+# aim: script for nanopolish
 
 #############################################################
 #############################################################
@@ -16,17 +16,18 @@ runNano() {
   local fastq=$3
   local alignment=$4
   local genome=$5
+  local output=${6}
   echo "$(data)....starting indexing for nanopolish"
   nanopolish index -s ${seq_sum} -d ${fast5} ${fastq} || echo "$(date)....nanopolish indexing failed"
   echo "$(date)....done indexing for nanopolish"
 
   echo "$(data)....starting alignment for nanopolish"
-  nanopolish eventalign --reads ${fastq} --bam ${alignment} --genome ${genome} || echo "$(date)....nanopolish alignment failed"
+  nanopolish eventalign --reads ${fastq} --bam ${alignment} --genome ${genome} -v -t 48 --scale-events --print-read-names --samples > || echo "$(date)....nanopolish alignment failed"
   echo "$(date)....done alignment for nanopolish"
 }; export -f runNano
 
 # example command
-runNano ${sum_wt_1} ${fast5_wt_1} ${fastq_wtt_1} ${bam_wt_1} ${genome}
+runNano ${sum_wt_1} ${fast5_wt_1} ${fastq_wtt_1} ${bam_wt_1} ${genome} ${outDirectory}
 
 # for sample wt_1
 sum_wt_1= "/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass1/sequencing_summary_FAQ86281_15c37cc7.txt"
@@ -64,5 +65,3 @@ sum_deg2="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_
 fast5_deg2="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_pass2        "
 fastq_deg2="/g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-first4-AR/5mM_MgCl_degrdation_pass2/all.5mM_MgCl_degrdation_pass2.fastq.gz"
 bam_deg2="/g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-first4-AR/5mM_MgCl_degrdation_pass2/all.5mM_MgCl_degrdation_pass2.fastq.gz.sorted.bam"
-
-
