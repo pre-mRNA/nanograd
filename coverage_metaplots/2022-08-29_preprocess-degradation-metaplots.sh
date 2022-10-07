@@ -71,4 +71,4 @@ export annotated="${wd}/annotated/"
 export trimmed="${wd}/trimmed"
 mkdir ${trimmed}
 
-for i in ${annotated}/*txt; do cat $i | cut -f5,8,10,17 | gzip -c > "${trimmed}/trimmed_${i##*/}" & done
+for i in ${annotated}/*txt; do cat $i | cut -f5,7,10,17 | gzip -c > "${trimmed}/trimmed_${i##*/}.gz" & done

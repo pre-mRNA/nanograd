@@ -12,3 +12,4 @@ export genome="/g/data/lf10/as7425/genomes/human_genome/transcriptome/GRCh38_cod
 export wd="/g/data/lf10/as7425/nanograd/analysis/2022-08-25_human-gc-content"; mkdir -p ${wd} 2>/dev/null
 
 seqkit fx2tab --name --gc -G -B -n -i ${genome} | gzip -c > ${wd}/GRCh38_gc.txt.gz
+seqkit fx2tab --name --gc  -B -n -i ${genome} | gzip -c > ${wd}/GRCh38_gc.txt.gz
