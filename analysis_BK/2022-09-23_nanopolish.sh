@@ -1,4 +1,5 @@
 #!/bin/bash
+<<<<<<< HEAD
 #PBS -P xc17
 #PBS -l walltime=48:00:00
 #PBS -l mem=190GB
@@ -6,6 +7,16 @@
 #PBS -q normal
 #PBS -M bhavika.kumar@anu.edu.au
 #PBS -l storage=scratch/xc17+gdata/xc17
+||||||| parent of 360d0b6 (sorry - revert last 3 commits because I was not careful)
+#PBS -P lf10
+#PBS -l walltime=48:00:00
+#PBS -l mem=190GB
+#PBS -l ncpus=48
+#PBS -q express
+#PBS -M aditya.sethi@anu.edu.au
+#PBS -l storage=scratch/xc17+gdata/xc17
+=======
+>>>>>>> 360d0b6 (sorry - revert last 3 commits because I was not careful)
 
 # written by BK on 2022-09-23
 # aim: script for nanopolish
@@ -13,8 +24,13 @@
 #############################################################
 #############################################################
 
+<<<<<<< HEAD
 
 
+||||||| parent of 360d0b6 (sorry - revert last 3 commits because I was not careful)
+
+=======
+>>>>>>> 360d0b6 (sorry - revert last 3 commits because I was not careful)
 # path to data
 export data="/g/data/xc17/degradation_project/Mg_degraded/data"
 
