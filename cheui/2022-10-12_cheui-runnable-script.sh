@@ -96,12 +96,12 @@ then
   # run model I
   printf "$(date) .... starting model 1 ${sample}\n\n\n"
 
-  python3 "${cheui}/scripts/CHEUI_predict_model1.py" -i "${ctd}/${sample}_signals+IDS.p" -m "${dm_m6a_1}" -l "${condition}" -o "${ctd}/${sample}_model1_m6A.txt" || die "$(date) ..... model 1 failed\n"
+  python3 "${cheui}/scripts/CHEUI_predict_model1.py" -i "${ctd}/${sample}_m6A_signals+IDS.p" -m "${dm_m6a_1}" -l "${condition}" -o "${ctd}/${sample}_model1_m6A.txt" || die "$(date) ..... model 1 failed\n"
 
-  printf "$(date) ..... done with model 1${sample}\n\n\n"
+  printf "$(date) ..... done with model 1 ${sample}\n\n\n"
 
   # sort the output
-  (head -1 "${ctd}/${sample}_model1.txt" && tail -n +2 "${ctd}/${sample}_model1.txt" | sort -k1 --parallel=48) > "${ctd}/${sample}_model1_m6A_sorted.txt" || die "sort failed"
+  (head -1 "${ctd}/${sample}_model1_m6A.txt" && tail -n +2 "${ctd}/${sample}_model1_m6A.txt" | sort -k1 --parallel=48) > "${ctd}/${sample}_model1_m6A_sorted.txt" || die "sort failed"
 
   # launch model 2
   printf "$(date) .... starting model 2 ${sample}\n\n\n"
@@ -127,12 +127,12 @@ then
   # run model I
   printf "$(date) .... starting model 1 ${sample}\n\n\n"
 
-  python3 "${cheui}/scripts/CHEUI_predict_model1.py" -i "${ctd}/${sample}_signals+IDS.p" -m "${dm_m5C_1}" -l "${condition}" -o "${ctd}/${sample}_model1_m5C.txt" || die "$(date) ..... model 1 failed\n"
+  python3 "${cheui}/scripts/CHEUI_predict_model1.py" -i "${ctd}/${sample}_m5C_signals+IDS.p" -m "${dm_m5c_1}" -l "${condition}" -o "${ctd}/${sample}_model1_m5C.txt" || die "$(date) ..... model 1 failed\n"
 
   printf "$(date) ..... done with model 1${sample}\n\n\n"
 
   # sort the output
-  (head -1 "${ctd}/${sample}_model1.txt" && tail -n +2 "${ctd}/${sample}_model1.txt" | sort -k1 --parallel=48) > "${ctd}/${sample}_model1_m5C_sorted.txt" || die "sort failed"
+  (head -1 "${ctd}/${sample}_model1_m5C.txt" && tail -n +2 "${ctd}/${sample}_model1_m5C.txt" | sort -k1 --parallel=48) > "${ctd}/${sample}_model1_m5C_sorted.txt" || die "sort failed"
 
   # launch model 2
   printf "$(date) .... starting model 2 ${sample}\n\n\n"
