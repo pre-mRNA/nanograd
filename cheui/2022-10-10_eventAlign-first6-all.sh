@@ -1,111 +1,64 @@
 #!/bin/bash
-<<<<<<< HEAD
-#PBS -P xc17
-#PBS -l walltime=48:00:00
-#PBS -l mem=190GB
-#PBS -l ncpus=48
-#PBS -q normal
-#PBS -M bhavika.kumar@anu.edu.au
-#PBS -l storage=scratch/xc17+gdata/xc17
-||||||| parent of 360d0b6 (sorry - revert last 3 commits because I was not careful)
-#PBS -P lf10
-#PBS -l walltime=48:00:00
-#PBS -l mem=190GB
-#PBS -l ncpus=48
-#PBS -q express
-#PBS -M aditya.sethi@anu.edu.au
-#PBS -l storage=scratch/xc17+gdata/xc17
-=======
->>>>>>> 360d0b6 (sorry - revert last 3 commits because I was not careful)
 
-# written by BK on 2022-09-23
-# aim: script for nanopolish
+# written by AJ Sethi on 2022-05-05
+# Run CHEUI for sample AR1
 
-#############################################################
-#############################################################
+####################################################################################################
 
-<<<<<<< HEAD
-
-
-||||||| parent of 360d0b6 (sorry - revert last 3 commits because I was not careful)
-
-=======
->>>>>>> 360d0b6 (sorry - revert last 3 commits because I was not careful)
 # path to data
 export data="/g/data/xc17/degradation_project/Mg_degraded/data"
 
-<<<<<<< HEAD
-#  data preprocessing
-runNano() {
-  local seq_sum=$1
-  local fast5=$2
-  local fastq=$3
-  local alignment=$4
-  local genome=$5
-  local output=${6}
-  echo "$(data)....starting indexing for nanopolish"
-  nanopolish index -s ${seq_sum} -d ${fast5} ${fastq} || echo "$(date)....nanopolish indexing failed"
-  echo "$(date)....done indexing for nanopolish"
-
-  echo "$(data)....starting alignment for nanopolish"
-  nanopolish eventalign --reads ${fastq} --bam ${alignment} --genome ${genome} -v -t 48 --scale-events --print-read-names --samples > || echo "$(date)....nanopolish alignment failed"
-  echo "$(date)....done alignment for nanopolish"
-}; export -f runNano
-
-# example command
-runNano ${sum_wt_1} ${fast5_wt_1} ${fastq_wtt_1} ${bam_wt_1} ${genome} ${outDirectory}
-=======
 # path to reference genome
 export genome="/g/data/xc17/as7425/sharing/genomes/human_genome/transcriptome/GRCh38_codingPlusNoncoding_noPsuedo.fa"
 
 # defining output path
-export outputDir="/g/data/xc17/bk9031/2022_nanograd_bk/analysis/2021_HEK293-degradation-first4-AR/nanopolish"
+export outputDir="/g/data/lf10/as7425/nanograd/analysis/2022-10-05_nanopolish_first6"
 mkdir -p ${outputDir}
 
 # nanopolish path
 export PATH="${PATH}:/g/data/xc17/as7425/sharing/apps/nanopolish"
 
+# setup hdf5
+export HDF5_PLUGIN_PATH=/home/150/as7425/.local/hdf5/lib/plugin
+
 ##################################################
 ##################################################
->>>>>>> 83646f3a340cd04398cebb8cbe15e762e34960cc
 
 # for sample wt_1
 sum_wt_1="/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass1/sequencing_summary_FAQ86281_15c37cc7.txt"
 fast5_wt_1="/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass1"
 fastq_wt_1="/g/data/xc17/degradation_project/Mg_degraded/basecalled/undegraded_hek293_pass1/all.undegraded_hek293_pass1.fastq.gz"
-bam_wt_1="/g/data/xc17/bk9031/2022_nanograd_bk/analysis/2021_HEK293-degradation-first4-AR/primaryAlignments/undegraded_hek293_pass1_primary.bam"
+bam_wt_1="/g/data/lf10/as7425/nanograd/data/2022-08-29_degradation-first6-transcriptomePrimaryAlignments/sorted/all.undegraded_hek293_pass1.fastq.gz.sorted.bam_sorted_primary.bam"
 
 # for sample wt_2
 sum_wt_2="/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass2/sequencing_summary_FAP73818_93b719e9.txt"
 fast5_wt_2="/g/data/xc17/degradation_project/Mg_degraded/data/undegraded_hek293_pass2";
 fastq_wt_2="/g/data/xc17/degradation_project/Mg_degraded/basecalled/undegraded_hek293_pass2/all.undegraded_hek293_pass2.fastq.gz"
-bam_wt_2="/g/data/xc17/bk9031/2022_nanograd_bk/analysis/2021_HEK293-degradation-first4-AR/primaryAlignments/undegraded_hek293_pass2_primary.bam"
+bam_wt_2="/g/data/lf10/as7425/nanograd/data/2022-08-29_degradation-first6-transcriptomePrimaryAlignments/sorted/all.undegraded_hek293_pass2.fastq.gz.sorted.bam_sorted_primary.bam"
 
 # for MgCl mild degradation sample 1
 sum_mild_deg1="/g/data/xc17/as7425/sharing/2022-09-26_nanograd-mildDegradation-transcriptomePrimaryAlignments/basecall_mild_degraded_rep1/sequencing_summary.txt"
 fast5_mild_deg1="/g/data/xc17/degradation_project/Mg_degraded/data/MgCl_degrdaded_mild_pass1/fast5"
 fastq_mild_deg1="/g/data/xc17/as7425/sharing/2022-09-26_nanograd-mildDegradation-transcriptomePrimaryAlignments/fastq/mild_degradataion_rep1.fastq"
-bam_mild_deg1="/g/data/xc17/as7425/sharing/2022-09-26_nanograd-mildDegradation-transcriptomePrimaryAlignments/primary_mild_degradataion_rep1.fastq.bam"
+bam_mild_deg1="/g/data/lf10/as7425/nanograd/data/2022-08-29_degradation-first6-transcriptomePrimaryAlignments/sorted/primary_mild_degradataion_rep1.fastq.bam_sorted_primary.bam"
 
 # for MgCl mild degradation sample 2
-sum_mild_deg2="/g/data/xc17/as7425/sharing/2022-09-26_nanograd-mildDegradation-transcriptomePrimaryAlignments/basecall_mild_degraded_rep2sequencing_summary.txt"
+sum_mild_deg2="/g/data/xc17/as7425/sharing/2022-09-26_nanograd-mildDegradation-transcriptomePrimaryAlignments/basecall_mild_degraded_rep2/sequencing_summary.txt"
 fast5_mild_deg2="/g/data/xc17/degradation_project/Mg_degraded/data/MgCl_degrdaded_mild_pass2/fast5"
 fastq_mild_deg2="/g/data/xc17/as7425/sharing/2022-09-26_nanograd-mildDegradation-transcriptomePrimaryAlignments/fastq/mild_degradataion_rep2.fastq"
-bam_mild_deg2="/g/data/xc17/as7425/sharing/2022-09-26_nanograd-mildDegradation-transcriptomePrimaryAlignments/primary_mild_degradataion_rep2.fastq.bam"
+bam_mild_deg2="/g/data/lf10/as7425/nanograd/data/2022-08-29_degradation-first6-transcriptomePrimaryAlignments/sorted/primary_mild_degradataion_rep2.fastq.bam_sorted_primary.bam"
 
 # for 5mM MgCl degraded sample 1
 sum_deg1="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_pass1/sequencing_summary_FAR08510_cd74bc1a.txt"
-fast5_deg1="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_pass1    "
+fast5_deg1="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_pass1"
 fastq_deg1="/g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-first4-AR/5mM_MgCl_degrdation_pass1/all.5mM_MgCl_degrdation_pass1.fastq.gz"
-bam_deg1="/g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-first4-AR/5mM_MgCl_degrdation_pass1/all.5mM_MgCl_degrdation_pass1.fastq.gz.sorted.bam"
+bam_deg1="/g/data/lf10/as7425/nanograd/data/2022-08-29_degradation-first6-transcriptomePrimaryAlignments/sorted/all.5mM_MgCl_degrdation_pass1.fastq.gz.sorted.bam_sorted_primary.bam"
 
 # for 5mM MgCl degraded sample 2
 sum_deg2="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_pass2/sequencing_summary_FAP73846_c4e33c9d.txt"
-fast5_deg2="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_pass2        "
+fast5_deg2="/g/data/xc17/degradation_project/Mg_degraded/data/5mM_MgCl_degrdation_pass2"
 fastq_deg2="/g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-first4-AR/5mM_MgCl_degrdation_pass2/all.5mM_MgCl_degrdation_pass2.fastq.gz"
-bam_deg2="/g/data/xc17/bk9031/2022_nanograd_bk/data/2021_HEK293-degradation-first4-AR/5mM_MgCl_degrdation_pass2/all.5mM_MgCl_degrdation_pass2.fastq.gz.sorted.bam"
-<<<<<<< HEAD
-=======
+bam_deg2="/g/data/lf10/as7425/nanograd/data/2022-08-29_degradation-first6-transcriptomePrimaryAlignments/sorted/all.5mM_MgCl_degrdation_pass2.fastq.gz.sorted.bam_sorted_primary.bam"
 
 ##################################################
 ##################################################
@@ -126,7 +79,7 @@ runNano() {
 
   # make a nanopolish index
   echo "$(date)....starting indexing for nanopolish"
-  nanopolish index -s ${seq_sum} -d ${fast5} ${fastq} || echo "$(date)....nanopolish indexing failed"
+  # nanopolish index -s ${seq_sum} -d ${fast5} ${fastq} || echo "$(date)....nanopolish indexing failed"
   echo "$(date)....done indexing for nanopolish"
 
   # align events
@@ -141,11 +94,13 @@ export -f runNano
 ##################################################
 ##################################################
 
-# test function for wt_rep1
+# # test function for wt_rep1
 time runNano "${sum_wt_1}" "${fast5_wt_1}" "${fastq_wt_1}" "${bam_wt_1}" || echo "failed for wt 1"
 time runNano "${sum_wt_2}" "${fast5_wt_2}" "${fastq_wt_2}" "${bam_wt_2}" || echo "failed for wt 2"
 time runNano "${sum_mild_deg1}" "${fast5_mild_deg1}" "${fastq_mild_deg1}" "${bam_mild_deg1}" || echo "failed for mild 1"
-time runNano "${sum_mild_deg2}" "${fast5_mild_cd pdeg2}" "${fastq_mild_deg2}" "${bam_mild_deg2}" || echo "failed for mild 2"
+time runNano "${sum_mild_deg2}" "${fast5_mild_deg2}" "${fastq_mild_deg2}" "${bam_mild_deg2}" || echo "failed for mild 2"
 time runNano "${sum_deg1}" "${fast5_deg1}" "${fastq_deg1}" "${bam_deg1}" || echo "failed for deg 1"
 time runNano "${sum_deg2}" "${fast5_deg2}" "${fastq_deg2}" "${bam_deg2}" || echo "failed for deg 2"
->>>>>>> 83646f3a340cd04398cebb8cbe15e762e34960cc
+
+exit
+exit
