@@ -8,6 +8,9 @@
 # export condition="degraded"
 # export ctd="/g/data/lf10/as7425/nanograd/analysis/2022-05-11_run-cheui"
 
+# write a test command for m6A using a subset test data
+# write a test command for m5C using a subset test data
+
 ####################################################################################################
 ####################################################################################################
 
