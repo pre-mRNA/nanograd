@@ -22,9 +22,10 @@ die() { printf "$(date +%F)\t$(date +%T)\t[scriptDied] CHEUI_PIPELINE died becau
 # set up cheui run using positional arguments
 
 # argument 1: eventAlign file
-# argument 2: a folder in which the output is generated
-# argument 3: a string, referring to the condition of the run
-# argument 4: A or C, corresponding to detection of m6A or m5C (default A)
+# argument 2: gtf annotation
+# argument 3: a folder in which the output is generated
+# argument 4: a string, referring to the condition of the run
+# argument 5: A or C, corresponding to detection of m6A or m5C (default A)
 
 # define nanopolish data
 export events="${1}" # nanopolish output file
@@ -33,18 +34,23 @@ export events="${1}" # nanopolish output file
 export sample=$(basename ${events} .txt)
 
 # define output directory for CHEUI
-export ctd="${2}"
+export ctd="${3}"
 mkdir -p ${ctd} # working directory
 cd ${ctd} || die "cannot access user-supplied working directory ${ctd}"
 
+# get the annotation
+export annotation="${4}"
+# check the annotation exists
+[ -f "${annotation}" ] || die "cannot access user supplied annotation ${annotation}"
+
 # define library condition
-export condition=${3}
+export condition=${4}
 
 # test the condition
 [ -z "$condition" ] && die "did not detect a valid condition in user-supplied ARG3"
 
 # get the run mode
-export mode=${4}
+export mode=${5}
 # test the mode
 [ -z "$mode" ] && die "did not detect a valid condition in user-supplied ARG3"
 
@@ -56,6 +62,9 @@ echo "scriptpath is ${SCRIPTPATH}"
 # get cheui paths
 export cheui="${SCRIPTPATH}/CHEUI" # CHEUI install directory
 export k_model="${cheui}/kmer_models/model_kmer.csv" # kmer model
+
+# get the path to R2Dtool
+export r2d="${SCRIPTPATH}/R2Dtool/scripts" # CHEUI install directory
 
 # get deep learning models for m6A
 export dm_m6a_1="${cheui}/CHEUI_trained_models/CHEUI_m6A_model1.h5" # m6a deep learning model 1
@@ -75,6 +84,7 @@ export dm_m5c_2="${cheui}/CHEUI_trained_models/CHEUI_m5C_model2.h5" # m6a deep l
 export PYTHONPATH="${PYTHONPATH}:/g/data/xc17/pm1122/Epinano_IVT/scripts/"
 module load tensorflow/2.3.0
 module load cuda/10.1
+module load R/4.2.1
 
 ##################################################
 
@@ -112,6 +122,21 @@ then
 
   printf "$(date) ..... finished model 2 ${sample}\n\n\n"
 
+  # convert to bed
+  bash "${r2d}/cheui_to_bed.sh" "${ctd}/${sample}_model2_m6A.txt" "${ctd}/${sample}_model2_m6A.bed"
+
+  printf "$(date) ..... annotating ${sample} to genomic coordinates\n\n\n"
+
+  # annotate
+  Rscript "${r2d}/R2_annotate.R" "${ctd}/${sample}_model2_m6A.bed" "${annotation}" "${ctd}/${sample}_model2_m6A_annotated.bed"
+
+  printf "$(date) ..... lifting ${sample} to genomic coordinates\n\n\n"
+
+  # liftover to genome
+  Rscript "${r2d}/R2_lift.R" "${ctd}/${sample}_model2_m6A_annotated.bed" "${annotation}" "${ctd}/${sample}_model2_m6A_annotated_liftover.bed"
+
+  printf "$(date) ..... pipeline complete for ${sample}\n\n\n"
+
 elif [ ${mode} == "C" ]
 then
 
@@ -143,6 +168,20 @@ then
 
   printf "$(date) ..... finished model 2 ${sample}\n\n\n"
 
+  printf "$(date) ..... annotating ${sample}\n\n\n"
+
+  # convert to bed
+  bash "${r2d}/cheui_to_bed.sh" "${ctd}/${sample}_model2_m5C.txt" "${ctd}/${sample}_model2_m5C.bed"
+
+  # annotate
+  Rscript "${r2d}/R2_annotate.R" "${ctd}/${sample}_model2_m5C.bed" "${annotation}" "${ctd}/${sample}_model2_m5C_annotated.bed"
+
+  printf "$(date) ..... lifting ${sample} to genomic coordinates\n\n\n"
+
+  # liftover to genome
+  Rscript "${r2d}/R2_lift.R" "${ctd}/${sample}_model2_m5C_annotated.bed" "${annotation}" "${ctd}/${sample}_model2_m5C_annotated_liftover.bed"
+
+  printf "$(date) ..... pipeline complete for ${sample}\n\n\n"
 else
 
   die "user supplied invalid mode ${mode}"

@@ -19,16 +19,16 @@ export liftover_output_m6A=""
 export liftover_output_m5C=""
 
 # converting CHEUI m6A model2 to bed like input file
-bash "${r2dtool}/scripts/cheui_to_bed.sh" ["${output}/m6A"] ["m6A_bed"]
+bash ${r2dtool}/scripts/cheui_to_bed.sh "${output}/m6A" "m6A_bed"
 
 bash "${r2dtool}/scripts/cheui_to_bed.sh" ["${output}/m5C"] ["m5C_bed"]
 
 # annotating transcriptomic sites
-Rscript "${r2dtool}/scripts/R2_annotate.R" ["${m6A_bed}"] ["${annotation}"] ["${annotated_output_m6A}"]
+Rscript "${r2dtool}/scripts/R2_annotate.R" "${m6A_bed}" ["${annotation}"] ["${annotated_output_m6A}"]
 
 Rscript "${r2dtool}/scripts/R2_annotate.R" ["${m5C_bed}"] ["${annotation}"] ["${annotated_output_m5C}"]
 
 # liftover transcriptomic sites
-Rscript "${r2dtool}/scripts/R2_lift.R" ["${m6A_bed}"] ["${annotation}"] ["${liftover_output_m6A}"]
+Rscript "${r2dtool}/scripts/R2_lift.R" "${annotated_output_m6A}" "${annotation}" ["${liftover_output_m6A}"]
 
-Rscript "${r2dtool}/scripts/R2_lift.R" ["${m5C_bed}"] ["${annotation}"] ["${liftover_output_m5C}"] 
+Rscript "${r2dtool}/scripts/R2_lift.R" ["${m5C_bed}"] ["${annotation}"] ["${liftover_output_m5C}"]
