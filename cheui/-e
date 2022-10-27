@@ -1,0 +1,14 @@
+2022-10-19	15:02:07	[scriptDied] CHEUI_PIPELINE died because it cannot access user supplied annotation 
+
+======================================================================================
+                  Resource Usage on 2022-10-19 15:02:09:
+   Job Id:             61007905.gadi-pbs
+   Project:            lf10
+   Exit Status:        1
+   Service Units:      0.01
+   NCPUs Requested:    1                      NCPUs Used: 1               
+                                           CPU Time Used: 00:00:03        
+   Memory Requested:   1.0GB                 Memory Used: 196.48MB        
+   Walltime requested: 01:00:00            Walltime Used: 00:00:06        
+   JobFS requested:    1.0GB                  JobFS used: 0B              
+======================================================================================

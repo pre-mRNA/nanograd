@@ -21,14 +21,29 @@ die() { printf "$(date +%F)\t$(date +%T)\t[scriptDied] CHEUI_PIPELINE died becau
 
 # set up cheui run using positional arguments
 
-# argument 1: eventAlign file
+# argument 1: eventAlign file; or alternatively, comma-separated eventalign files for multiple different samples; e.g. "path1","path2","path3"
 # argument 2: gtf annotation
 # argument 3: a folder in which the output is generated
 # argument 4: a string, referring to the condition of the run
 # argument 5: A or C, corresponding to detection of m6A or m5C (default A)
 
+##########
+
 # define nanopolish data
-export events="${1}" # nanopolish output file
+export events_list="${1}" # nanopolish output file
+
+export a="event_1","event_2","event_3"
+IFS=', ' read -r -a array <<< "$a"
+
+for element in "${array[@]}"
+do
+    echo "$element"
+done
+
+num_events=${#array[@]}
+
+
+##########
 
 # define library namea
 export sample=$(basename ${events} .txt)
