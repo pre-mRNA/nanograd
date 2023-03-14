@@ -46,20 +46,28 @@ matcher <- function(pattern, x) {
   apply(cbind(start,end), 1, function(y) substr(x, start=y[1], stop=y[2]));
 }
 
+# The matcher function takes a regular expression pattern and a string x as input. It uses gregexpr to find all matches of the pattern in x. It then extracts the starting index of each match, and computes the ending index by adding the length of the matched pattern (which is stored as an attribute of ind) and subtracting 2 (since CIGAR strings use a 1-based coordinate system and include a type code at the end of each match). Finally, it uses apply to iterate over each matched substring and extract it from x using substr.
+
 doone <- function(c, cigar) {
   pat <- paste("\\d+", c , sep="")
   sum(as.numeric(matcher(pat, cigar)), na.rm=T)
 }
+
+# The doone function takes a character code c (e.g. "M" for match) and a CIGAR string cigar as input. It creates a regular expression pattern for the code by concatenating the string \\d+ (which matches one or more digits) with c. It then calls matcher to extract all matches of the pattern in cigar, and converts the resulting vector of substrings to numeric values. The function returns the sum of these values, ignoring any missing values (indicated by NA) using the na.rm argument of sum.
 
 ## takes a cigar string and parses it, not very fast but...
 cigarsums <- function(cigar, chars=c("M")) {
   sapply (chars, doone, cigar)
 }
 
+# The cigarsums function takes a CIGAR string and a vector of character codes (defaulting to "M") as input. It uses sapply to apply the doone function to each element of the chars vector, passing cigar as the second argument. The function returns a vector of numeric values, giving the sum of all matches of each code in chars in cigar.
+
 # calculate matches
 addcig <- input %>%
   rowwise %>% mutate(map_len = cigarsums(cig)) %>%
   dplyr::select(-cig)
+
+# we apply the cigarsums funuction to each row of the input to calculate the total mapped length 
 
 # memory management
 rm(input)

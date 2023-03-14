@@ -32,21 +32,16 @@ die() { printf "$(date +%F)\t$(date +%T)\t[scriptDied] CHEUI_PIPELINE died becau
 # define nanopolish data
 export events_list="${1}" # nanopolish output file
 
-export a="event_1","event_2","event_3"
-IFS=', ' read -r -a array <<< "$a"
+IFS=', ' read -r -a array <<< "${events_list}"
 
 for element in "${array[@]}"
 do
-    echo "$element"
+  printf "$(date +%F)\t$(date +%T)\t[scriptDied] CHEUI_PIPELINE detected eventalign file ${element}\n"
 done
 
 num_events=${#array[@]}
 
-
 ##########
-
-# define library namea
-export sample=$(basename ${events} .txt)
 
 # define output directory for CHEUI
 export ctd="${3}"
@@ -111,29 +106,47 @@ then
 
   printf "$(date) .... Using m6A models\n\n\n"
 
-  # preprocess the data
-  printf "$(date) .... starting to preprocess ${sample}\n\n\n"
+  # loop the preprocessing and model 1 for events in array
 
-  python3 "${cheui}/scripts/CHEUI_preprocess_m6A.py" -i "${events}" -m ${k_model} -s "${sample}_m6A" -n 48 -o "${ctd}" || die "$(date) ..... preprocssing failed\n"
+  for i in "${arrayName[@]}"
+  do
 
-  printf "$(date) ..... done preprocessing ${sample}\n\n\n"
+    # get the sample name
+    export sample=$(basename ${events} .txt)
 
-  # run model I
-  printf "$(date) .... starting model 1 ${sample}\n\n\n"
+    # preprocess the data
+    printf "$(date) .... starting to preprocess ${sample}\n\n\n"
 
-  python3 "${cheui}/scripts/CHEUI_predict_model1.py" -i "${ctd}/${sample}_m6A_signals+IDS.p" -m "${dm_m6a_1}" -l "${condition}" -o "${ctd}/${sample}_model1_m6A.txt" || die "$(date) ..... model 1 failed\n"
+    python3 "${cheui}/scripts/CHEUI_preprocess_m6A.py" -i "${events}" -m ${k_model} -s "${sample}_m6A" -n 48 -o "${ctd}" || die "$(date) ..... preprocssing failed\n"
 
-  printf "$(date) ..... done with model 1 ${sample}\n\n\n"
+    printf "$(date) ..... done preprocessing ${sample}\n\n\n"
 
+    # run model I
+    printf "$(date) .... starting model 1 ${sample}\n\n\n"
+
+    python3 "${cheui}/scripts/CHEUI_predict_model1.py" -i "${ctd}/${sample}_m6A_signals+IDS.p" -m "${dm_m6a_1}" -l "${condition}" -o "${ctd}/${sample}_model1_m6A.txt" || die "$(date) ..... model 1 failed\n"
+
+    printf "$(date) ..... done with model 1 ${sample}\n\n\n"
+
+  done
+
+  printf "$(date) ..... sorting and merging all samples \n\n\n"
   # sort the output
-  (head -1 "${ctd}/${sample}_model1_m6A.txt" && tail -n +2 "${ctd}/${sample}_model1_m6A.txt" | sort -k1 --parallel=48) > "${ctd}/${sample}_model1_m6A_sorted.txt" || die "sort failed"
+  files=(${ctd}/*_model1_m6A.txt)
+  files=(*_model1_m6A.txt)
+  {
+    head -n1 "${files[0]}"
+    for i in "${files[@]}"; do
+      tail -n+2 "$i"
+    done | sort -k1 --parallel=48
+  } > "${ctd}/${sample}_model1_m6A_sorted_merged.txt" || die "sort failed"
 
   # launch model 2
   printf "$(date) .... starting model 2 ${sample}\n\n\n"
 
-  python3 "${cheui}/scripts/CHEUI_predict_model2.py" -i "${ctd}/${sample}_model1_m6A_sorted.txt" \
-    -m "${dm_m6a_2}" \
-    -o "${ctd}/${sample}_model2_m6A.txt" || die "model 2 failed\n"
+  python3 "${cheui}/scripts/CHEUI_predict_model2.py" -i "${ctd}/${sample}_model1_m6A_sorted_merged.txt" \
+  -m "${dm_m6a_2}" \
+  -o "${ctd}/${sample}_model2_m6A.txt" || die "model 2 failed\n"
 
   printf "$(date) ..... finished model 2 ${sample}\n\n\n"
 
@@ -157,29 +170,48 @@ then
 
   printf "$(date) .... Using m5C models\n\n\n"
 
-  # preprocess the data
-  printf "$(date) .... starting to preprocess ${sample}\n\n\n"
+  for i in "${arrayName[@]}"
+  do
 
-  python3 "${cheui}/scripts/CHEUI_preprocess_m5C.py" -i "${events}" -m ${k_model} -s "${sample}_m5C" -n 48 -o "${ctd}" || die "$(date) ..... preprocssing failed\n"
+    # get the sample name
+    export sample=$(basename ${events} .txt)
 
-  printf "$(date) ..... done preprocessing ${sample}\n\n\n"
 
-  # run model I
-  printf "$(date) .... starting model 1 ${sample}\n\n\n"
+    # preprocess the data
+    printf "$(date) .... starting to preprocess ${sample}\n\n\n"
 
-  python3 "${cheui}/scripts/CHEUI_predict_model1.py" -i "${ctd}/${sample}_m5C_signals+IDS.p" -m "${dm_m5c_1}" -l "${condition}" -o "${ctd}/${sample}_model1_m5C.txt" || die "$(date) ..... model 1 failed\n"
+    python3 "${cheui}/scripts/CHEUI_preprocess_m5C.py" -i "${events}" -m ${k_model} -s "${sample}_m5C" -n 48 -o "${ctd}" || die "$(date) ..... preprocssing failed\n"
 
-  printf "$(date) ..... done with model 1${sample}\n\n\n"
+    printf "$(date) ..... done preprocessing ${sample}\n\n\n"
+
+    # run model I
+    printf "$(date) .... starting model 1 ${sample}\n\n\n"
+
+    python3 "${cheui}/scripts/CHEUI_predict_model1.py" -i "${ctd}/${sample}_m5C_signals+IDS.p" -m "${dm_m5c_1}" -l "${condition}" -o "${ctd}/${sample}_model1_m5C.txt" || die "$(date) ..... model 1 failed\n"
+
+    printf "$(date) ..... done with model 1${sample}\n\n\n"
+
+  done
+
+  printf "$(date) ..... sorting and merging all samples \n\n\n"
 
   # sort the output
-  (head -1 "${ctd}/${sample}_model1_m5C.txt" && tail -n +2 "${ctd}/${sample}_model1_m5C.txt" | sort -k1 --parallel=48) > "${ctd}/${sample}_model1_m5C_sorted.txt" || die "sort failed"
+  files=(${ctd}/*_model1_m5C.txt)
+  files=(*_model1_m5C.txt)
+  {
+    head -n1 "${files[0]}"
+    for i in "${files[@]}"; do
+      tail -n+2 "$i"
+    done | sort -k1 --parallel=48
+  } > "${ctd}/${sample}_model1_m5C_sorted_merged.txt" || die "sort failed"
+
 
   # launch model 2
   printf "$(date) .... starting model 2 ${sample}\n\n\n"
 
-  python3 "${cheui}/scripts/CHEUI_predict_model2.py" -i "${ctd}/${sample}_model1_m5C_sorted.txt" \
-    -m "${dm_m5c_2}" \
-    -o "${ctd}/${sample}_model2_m5C.txt" || die "model 2 failed\n"
+  python3 "${cheui}/scripts/CHEUI_predict_model2.py" -i "${ctd}/${sample}_model1_m5C_sorted_merged.txt" \
+  -m "${dm_m5c_2}" \
+  -o "${ctd}/${sample}_model2_m5C.txt" || die "model 2 failed\n"
 
   printf "$(date) ..... finished model 2 ${sample}\n\n\n"
 
