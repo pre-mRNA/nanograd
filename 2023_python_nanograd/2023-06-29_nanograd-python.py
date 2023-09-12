@@ -11,9 +11,13 @@ import gffutils
 import logging
 import os
 import pandas as pd
+import numpy as np 
 import pysam
 import tempfile
 import time
+from tqdm import tqdm
+
+
 
 # set logging parameters 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -202,12 +206,13 @@ def parse_summary(summary_file_path):
     return summary_data, temp_file_path
 
 # function to merge data from bam, gtf, sequencing_summary, using transcript_id as key 
+# includes the MDI_read_length, the sum of cigar match, deletion, insertion 
 def merge_data(gtf_data, bam_data, summary_data):
     start = time.time()
 
     # header for merged data 
-    merged_data = "read_id\tref_transcript\tsequence_length\t5_softclip\t3_softclip\tcigar_match\tcigar_ins\tcigar_del\tcigar_splice\tcigar_softclip_total\tcigar_hardclip_total\tend_reason\ttranscript_annotated_length\ttranscript_biotype\n"
-    
+    merged_data = "read_id\tref_transcript\tsequence_length\t5_softclip\t3_softclip\tcigar_match\tcigar_ins\tcigar_del\tcigar_splice\tcigar_softclip_total\tcigar_hardclip_total\tend_reason\ttranscript_annotated_length\ttranscript_biotype\tmdi_read_length\n"
+
     # make list to store any transcripts which have merging error with gtf data 
     gtf_error_transcripts = []
     
@@ -258,6 +263,13 @@ def merge_data(gtf_data, bam_data, summary_data):
                 ss_error_transcripts.append(ref_transcript)
         else:
             gtf_error_transcripts.append(ref_transcript)
+
+        # Calculate read_length: sum of cigar match, cigar ins, and cigar del
+        calculated_read_length = cigar_lengths.get(0, 0) + cigar_lengths.get(1, 0) + cigar_lengths.get(2, 0)
+
+        # finally, combine everything into merged_data
+        merged_data += f'{read_id}\t{ref_transcript}\t{read_length}\t{soft_clip_5}\t{soft_clip_3}\t{cigar_values}\t{end_reason}\t{gtf_info["length"]}\t{gtf_info["biotype"]}\t{calculated_read_length}\n'
+
 
     # log read/transcripts pairs that have errors merging with the gtf 
     # note, we get a few in the test data, because the gtf is chromosome only whereas the FASTA that was used has scaffolds, alt contigs etc. 
@@ -348,6 +360,51 @@ def calculate_cuts_per_transcript(merged_data):
     # TODO: Implement this function
     pass
 
+def mask(input_path, output_path):
+    logging.info(f"Reading data from {input_path}...")
+    
+    # read and sort by transcript and mdi_read_length
+    merged_data = pd.read_csv(input_path, sep='\t').sort_values(['ref_transcript', 'mdi_read_length'])
+    logging.info("Data sorted.")
+    
+    # initialize new column
+    merged_data['censored_read_length'] = merged_data['mdi_read_length']
+    
+    # find rows to censor and shift their values down within each group
+    mask_condition = merged_data['end_reason'] == 'unblock_mux_change'
+    merged_data['censored_read_length'] = merged_data.groupby('ref_transcript')['mdi_read_length'].shift(-1).where(mask_condition, merged_data['mdi_read_length'])
+    
+    # if all rows in a group are to be censored, set them to NA
+    all_censored_in_group = mask_condition.groupby(merged_data['ref_transcript']).transform('all')
+    merged_data['censored_read_length'].where(~all_censored_in_group, np.nan, inplace=True)
+    
+    logging.info(f"Writing the processed data to {output_path}...")
+    merged_data.to_csv(output_path, sep='\t', index=False)
+    logging.info("Masking process completed.")
+
+def mask(input_path, output_path):
+    logging.info(f"Reading data from {input_path}...")
+    
+    # read and sort by transcript and mdi_read_length
+    merged_data = pd.read_csv(input_path, sep='\t').sort_values(['ref_transcript', 'mdi_read_length'])
+    logging.info("Data sorted.")
+    
+    # initialize new column
+    merged_data['censored_read_length'] = merged_data['mdi_read_length']
+    
+    # find rows to censor and shift their values down within each group
+    mask_condition = merged_data['end_reason'] == 'unblock_mux_change'
+    merged_data['censored_read_length'] = merged_data.groupby('ref_transcript')['mdi_read_length'].shift(-1).where(mask_condition, merged_data['mdi_read_length'])
+    
+    # if all rows in a group are to be censored, set them to NA
+    all_censored_in_group = mask_condition.groupby(merged_data['ref_transcript']).transform('all')
+    merged_data['censored_read_length'].where(~all_censored_in_group, np.nan, inplace=True)
+    
+    logging.info(f"Writing the processed data to {output_path}...")
+    merged_data.to_csv(output_path, sep='\t', index=False)
+    logging.info("Masking process completed.")
+
+
 # main 
 def main(args):
     
@@ -356,6 +413,14 @@ def main(args):
         logging.basicConfig(level=logging.INFO)
     elif args.verbosity >= 2:
         logging.basicConfig(level=logging.DEBUG)
+
+    # check if mask mode is enabled 
+    # this mode masks the mdi_read_length if the end_reason is unblock_mux_change 
+    # takes the next closest non-mux-change value 
+    if args.mode == 'mask':
+        logging.info('Executing mask mode')
+        mask(args.input_file, args.output_file_mask)
+        return  # Return here as this mode does not require other steps
 
     # parse BAM 
     logging.info('Processing BAM file')
@@ -397,17 +462,30 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description='Process GTF, BAM, and sequencing summary files.')
-    parser.add_argument('bam_file', help='Input sorted + indexed bam file.')
-    parser.add_argument('gtf_file', help='Input gtf/gff2 annnotation.')
-    parser.add_argument('summary_file', help='Input sequencing summary file from guppy.')
-    parser.add_argument('output_file', help='Output table.')
+    parser.add_argument('bam_file', help='Input sorted + indexed bam file.', nargs='?')
+    parser.add_argument('gtf_file', help='Input gtf/gff2 annnotation.', nargs='?')
+    parser.add_argument('summary_file', help='Input sequencing summary file from guppy.', nargs='?')
+    parser.add_argument('output_file', help='Output table.', nargs='?')
     parser.add_argument('-t', '--threads', type=int, default=1, help='Number of threads to use (not implemented).') ## not implemented 
     parser.add_argument('-v', '--verbosity', type=int, default=0, help='Verbosity: 0 = Minimum, 1 = Information, 2 = Debugging.')
     parser.add_argument('-k', '--keep_temp', action='store_true', default=False, help='Keep temporary files in output directory.')
-    parser.add_argument('-m', '--mode', type=str, default='preprocess', choices=['preprocess', 'din', 'cuts'], help='Mode of operation: preprocess (default), din, or cuts.')
+    parser.add_argument('-m', '--mode', type=str, default='preprocess', choices=['preprocess', 'din', 'cuts', 'mask'], help='Mode of operation: preprocess (default), din, cuts, or mask.')
+    
+    # flags for mask mode 
+    parser.add_argument('--input_file', help='Input text file for mask mode.')
+    parser.add_argument('--output_file_mask', help='Output text file for mask mode.')
+
     args = parser.parse_args()
 
-    # Set temporary directory to the output file's directory
-    os.environ['TMPDIR'] = os.path.dirname(os.path.abspath(args.output_file))
+    # validate args
+    if args.mode == 'mask':
+        if not args.input_file or not args.output_file_mask:
+            parser.error("Mode 'mask' requires --input_file and --output_file_mask.")
+    elif not args.bam_file or not args.gtf_file or not args.summary_file:
+        parser.error("Modes other than 'mask' require bam_file, gtf_file, and summary_file.")
+
+    # adjust temp directory
+    tmp_output_file = args.output_file_mask if args.mode == 'mask' else args.output_file
+    os.environ['TMPDIR'] = os.path.dirname(os.path.abspath(tmp_output_file))
 
     main(args)
