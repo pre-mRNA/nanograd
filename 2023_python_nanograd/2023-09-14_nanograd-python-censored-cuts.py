@@ -370,34 +370,43 @@ def process_batch(sub_data, column_to_use, window):
     return sub_data.groupby("ref_transcript")[column_to_use].apply(saturation, window=window)
 
 # main function to calculate cuts per transcript saturation point 
-def calculate_cuts_per_transcript(merged_data_file, n_threads, censor=True, window=1):
+def calculate_cuts_per_transcript(merged_data_file, n_threads, censor=False, window=1):
     start = time.time()
 
-    # read in the merged temp file 
+    # read in the merged temp file
     merged_data = pd.read_csv(merged_data_file, sep='\t')
 
     # apply censoring if the flag is True
     if censor:
         logging.info("Applying censoring to data.")
-        
-        # initialize new column
-        merged_data['censored_read_length'] = merged_data['mdi_read_length']
 
-        # find rows to censor and shift their values down within each group using vectorized operations
-        mask_condition = merged_data['end_reason'] == 'unblock_mux_change'
-        merged_data['censored_read_length'] = merged_data.groupby('ref_transcript')['mdi_read_length'].shift(-1).where(mask_condition, merged_data['mdi_read_length'])
-        
-        # if all rows in a group are to be censored, set them to NA
-        all_censored_in_group = mask_condition.groupby(merged_data['ref_transcript']).transform('all')
-        merged_data['censored_read_length'].where(~all_censored_in_group, np.nan, inplace=True)
+        # initialize new column
+        merged_data['censored_read_length'] = merged_data['mdi_read_length'].astype(float)
+
+        # now: we use a nested censoring function to perform censoring 
+        def censoring_function(group):
+            mask_condition = group['end_reason'] == 'unblock_mux_change'
+            longest_line_idx = group['mdi_read_length'].idxmax()
+            for i in range(len(group)):
+                if mask_condition.iat[i]:
+                    if i < len(group) - 1:  # if not the last element
+                        group['censored_read_length'].iat[i] = group['mdi_read_length'].iat[i + 1]
+                    else:  # for the last element
+                        group['censored_read_length'].iat[i] = np.nan
+                if group.index[i] == longest_line_idx:  # check if the line is the longest in the transcript
+                    group['censored_read_length'].iat[i] = np.nan  # censor the longest line
+            return group
+
+        # apply censoring function to each transcript group 
+        merged_data = merged_data.groupby('ref_transcript').apply(censoring_function)
 
         logging.info("Censoring applied.")
 
-    # group by ref_transcript and choose the appropriate column for analysis based on censor mode 
+    # rest of the code remains the same
     column_to_use = 'censored_read_length' if censor else 'mdi_read_length'
     grouped_by_transcript = merged_data.groupby("ref_transcript")
-    
-    # report data stats 
+
+    # report data stats
     total_reads = len(merged_data)
     total_transcripts = grouped_by_transcript.ngroups
     logging.info(f"Processing {total_reads} reads assigned to {total_transcripts} transcripts.")
@@ -429,16 +438,26 @@ def mask(input_path, output_path):
     merged_data = pd.read_csv(input_path, sep='\t').sort_values(['ref_transcript', 'mdi_read_length'])
     logging.info("Data sorted.")
     
-    # initialize new column
-    merged_data['censored_read_length'] = merged_data['mdi_read_length']
+    # initialize new column and convert to float to allow NaNs
+    merged_data['censored_read_length'] = merged_data['mdi_read_length'].astype(float)
     
-    # find rows to censor and shift their values down within each group
-    mask_condition = merged_data['end_reason'] == 'unblock_mux_change'
-    merged_data['censored_read_length'] = merged_data.groupby('ref_transcript')['mdi_read_length'].shift(-1).where(mask_condition, merged_data['mdi_read_length'])
+    # censoring function 
+    def censoring_function(group):
+        mask_condition = group['end_reason'] == 'unblock_mux_change'
+        longest_line_idx = group['mdi_read_length'].idxmax()
+        
+        for i in range(len(group)):
+            if mask_condition.iat[i]:
+                if i < len(group) - 1:  # if not the last element
+                    group['censored_read_length'].iat[i] = group['mdi_read_length'].iat[i + 1]
+                else:  # for the last element
+                    group['censored_read_length'].iat[i] = np.nan
+            if group.index[i] == longest_line_idx:  # check if the line is the longest in the transcript
+                group['censored_read_length'].iat[i] = np.nan  # censor the longest line
+        return group
     
-    # if all rows in a group are to be censored, set them to NA
-    all_censored_in_group = mask_condition.groupby(merged_data['ref_transcript']).transform('all')
-    merged_data['censored_read_length'].where(~all_censored_in_group, np.nan, inplace=True)
+    # apply custom censoring function to each group
+    merged_data = merged_data.groupby('ref_transcript').apply(censoring_function)
     
     logging.info(f"Writing the processed data to {output_path}...")
     merged_data.to_csv(output_path, sep='\t', index=False)
@@ -509,7 +528,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbosity', type=int, default=0, help='Verbosity: 0 = Minimum, 1 = Information, 2 = Debugging.')
     parser.add_argument('-k', '--keep_temp', action='store_true', default=False, help='Keep temporary files in output directory.')
     parser.add_argument('-m', '--mode', type=str, default='preprocess', choices=['preprocess', 'din', 'cuts', 'mask'], help='Mode of operation: preprocess (default), din, cuts, or mask.')
-    parser.add_argument('-c', '--censor', type=bool, default=True, help='Apply censoring during calculation. Only applicable when mode is cuts. Default TRUE')
+    parser.add_argument('-c', '--censor', type=bool, default=False, help='Apply censoring during calculation. Only applicable when mode is cuts. Default False')
 
     # flags for mask mode 
     parser.add_argument('--input_file', help='Input text file for mask mode.')
@@ -529,7 +548,7 @@ if __name__ == "__main__":
         parser.error("Modes other than 'mask' require bam_file, gtf_file, and summary_file.")
 
     # validate censor flag
-    if args.censor is not None and args.mode != 'cuts':
+    if args.censor == True and args.mode != 'cuts':
         parser.error("The --censor flag can only be used when the mode is 'cuts'.")
 
     # adjust temp directory

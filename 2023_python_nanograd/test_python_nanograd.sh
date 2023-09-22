@@ -85,3 +85,27 @@ python3 ~/nanograd/2023_python_nanograd/2023-09-14_nanograd-python-censored-cuts
 
 awk -F '\t' 'NR==1 || $16 != $15' *censored* | wc -l
 awk -F '\t' 'NR==1 || $16 != $15' *censored* | grep "unblock" | wc -l
+
+####################
+
+# 22-Sep 
+
+# Fix the mask function when there are two adjacent unblock_mux_change 
+# Or, if the longest transcript is the unblock_mux_change 
+
+
+# test new masking code 
+export bam="/g/data/xc17/as7425/sharing/2023-06-29_nanograd-python/all.undegraded_hek293_pass1.fastq.gz.sorted.bam" # undegraded pass 1 bam
+export annotation="/g/data/xc17/as7425/sharing/2023-06-29_nanograd-python/gencode.v38.annotation.gtf" # annotation 
+export ss="/g/data/xc17/as7425/sharing/2023-06-29_nanograd-python/sequencing_summary_FAQ86281_15c37cc7.txt" # sequencing summary 
+export out="/g/data/xc17/as7425/sharing/2023-09-12_nanograd-python/test_cuts/"; mkdir -p ${out} 2>/dev/null # output dir 
+
+# go to /g/data/ to prevent temp files from accumulating in /home/
+# gtf index is produced in working directory rather than in the parent folder of the 4th argument...
+cd $out 
+
+# run the censor mode 
+python3 ~/nanograd/2023_python_nanograd/2023-09-14_nanograd-python-censored-cuts.py ${bam} ${annotation} ${ss} "${out}/generate_preprocess.txt" -m cuts -k -t 48 
+
+awk -F '\t' 'NR==1 || $16 != $15' *censored* | wc -l
+awk -F '\t' 'NR==1 || $16 != $15' *censored* | grep "unblock" | wc -l
